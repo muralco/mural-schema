@@ -1,6 +1,6 @@
 // === Schema types ========================================================= //
 export interface ObjectType {
-  [key: string]: Type
+  [key: string]: Type;
 }
 
 export type SimpleType =
@@ -9,14 +9,19 @@ export type SimpleType =
   | undefined
   | null;
 
-export type ScalarType = ObjectType | SimpleType
+export type ScalarType = ObjectType | SimpleType;
 export type ArrayType = ScalarType[];
 export type UnionType = ScalarType[][];
+
+export type ValidationFn = (obj: any) => ValidationError[];
+
+export type FunctionType = ValidationFn | CheckFn;
 
 export type Type =
   ScalarType
   | ArrayType
-  | UnionType;
+  | UnionType
+  | FunctionType;
 
 // === Process types ======================================================== //
 export interface ValidationError {
@@ -25,16 +30,14 @@ export interface ValidationError {
   expected?: string;
 }
 
-export type ValidationFn = (obj: any) => ValidationError[];
-
 export type CheckFn = (obj: any) => boolean;
 
 export class InvalidSchemaError extends Error {}
 
 export interface TypeMap {
-  [type: string]: Type | ((key: string) => ValidationFn | CheckFn);
+  [type: string]: Type;
 }
 
 export interface Options {
-  customTypes?: TypeMap
+  customTypes?: TypeMap;
 }

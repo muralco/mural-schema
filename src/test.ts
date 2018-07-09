@@ -9,21 +9,26 @@ Before(() => { ctx = {}; });
 const parseJSON = (s: string) =>
   s === 'undefined'
     ? undefined
-    : JSON.parse(s);
-
+    : s.startsWith('/') && s.endsWith('/') && s.length > 1
+      ? new RegExp(s.substring(1, s.length - 1))
+      : JSON.parse(s);
 
 const setSchema = (schema: string) => {
-  ctx.$schema = parseSchema('body', parseJSON(schema), {
-    customTypes: {
-      email: _ => obj => typeof obj === 'string' && obj.includes('@'),
-      Person: {
-        first: 'string',
-        middle: 'string?',
-        last: 'string',
-        age: 'number?'
-      }
-    }
-  });
+  ctx.$schema = parseSchema(
+    'body',
+    parseJSON(schema),
+    {
+      customTypes: {
+        email: obj => typeof obj === 'string' && obj.includes('@'),
+        Person: {
+          first: 'string',
+          middle: 'string?',
+          last: 'string',
+          age: 'number?',
+        },
+      },
+    },
+  );
 };
 const validateSchema = (obj: string) => {
   ctx.$errors = ctx.$schema(parseJSON(obj));
@@ -45,7 +50,7 @@ Then(/^the validation error is "(.*)"(?: at \[(.*)\])?$/, (msg, key) => {
   assert.strictEqual(error.message, msg);
   if (key) assert.strictEqual(error.key, key);
 });
-Then(/^the validation error is$/, expected => {
+Then(/^the validation error is$/, (expected) => {
   assert.strictEqual(ctx.$errors.length, 1, 'Expected a single error');
   assert.deepEqual(ctx.$errors[0], parseJSON(expected));
 });

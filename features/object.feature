@@ -33,25 +33,17 @@ Scenario: success not-strict
   When validating { "key": 1, "extra": 2 }
   Then the validation passes
 
-Scenario: error strict
+Scenario: error extra keys (strict mode)
   Given a schema { "key": "number" }
   When validating { "key": 1, "extra": 2 }
-  Then the validation error is
-    """
-    {
-      "message": "Unexpected key",
-      "key": "body.extra"
-    }
-    """
+  Then the validation error is "Unexpected key" at [body.extra]
+
+Scenario: error missing keys
+  Given a schema { "key": "number" }
+  When validating {}
+  Then the validation error is "Expected number" at [body.key]
 
 Scenario: error nested
   Given a schema { "key": { "n": "number" } }
   When validating { "key": { "n": true } }
-  Then the validation error is
-    """
-    {
-      "message": "Expected number",
-      "key": "body.key.n",
-      "expected": "number"
-    }
-    """
+  Then the validation error is "Expected number" at [body.key.n]

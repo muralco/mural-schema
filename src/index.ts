@@ -7,100 +7,88 @@ import {
   isPlainObject,
   noExtraKeys,
   oneOf,
+  optional,
   replaceKey,
+  valueIs,
+  isUnionType,
 } from './util';
 import {
   ArrayType,
   InvalidSchemaError,
   ObjectType,
   Options,
-  SimpleType,
   Type,
   TypeMap,
-  UnionType,
   ValidationFn,
+  FunctionType,
 } from './types';
 
 // === Simple types ========================================================= //
-const BUILT_INS: TypeMap = {
-  boolean: _ => obj => typeof obj === 'boolean',
-  number: _ => obj => typeof obj === 'number',
-  string: _ => obj => typeof obj === 'string',
-};
-
-const getSimpleValidationFn = (
+const parseSchemaRegExp = (
   key: string,
-  schema: SimpleType,
+  schema: RegExp,
+): ValidationFn =>
+  (obj) => {
+    if (typeof obj !== 'string') return [expected(key, 'string')];
+    return obj.match(schema)
+      ? []
+      : [error(key, `Value does not match: ${schema}`)];
+  };
+
+const parseSchemaUnion = (
+  key: string,
+  schemas: Type[],
   options: Options,
+): ValidationFn =>
+  oneOf(key, schemas.map(s => parseSchemaAny(key, s, options)));
+
+const parseSchemaFunction = (
+  key: string,
+  schemaFunction: FunctionType,
+  name: string,
 ): ValidationFn => {
-  if (schema === undefined) {
-    return obj => (
-      obj === undefined
-        ? []
-        : [expected(key, 'undefined')]
-    );
-  }
-  if (schema === null) {
-    return obj => (
-      obj === null
-        ? []
-        : [expected(key, 'null')]
-    );
-  }
-
-  if (schema instanceof RegExp) {
-    return obj => {
-      if (typeof obj !== 'string') return [expected(key, 'string')];
-      return obj.match(schema)
-        ? []
-        : [error(key, `Value does not match: ${schema}`)]
-    }
-  }
-
-  const union = schema.split('|');
-  if (union.length !== 1) {
-    return oneOf(key, union.map(s => getSimpleValidationFn(key, s, options)));
-  }
-
-  const getFn = (options.customTypes || {})[schema] || BUILT_INS[schema];
-  if (!getFn) {
-    throw new InvalidSchemaError(`Unknown type for ${key}: ${schema}`);
-  }
-
-  if (typeof getFn !== 'function') {
-    return parseSchema(key, getFn);
-  }
-
-  const validationFn = getFn(key);
-  return obj => {
-    const error = validationFn(obj);
+  return (obj) => {
+    const error = schemaFunction(obj);
     if (typeof error === 'boolean') {
       return error
         ? []
-        : [expected(key, schema)];
+        : [expected(key, name)];
     }
     return error;
   };
-}
+};
 
-function parseSchemaSimple(
+const BUILT_INS: TypeMap = {
+  boolean: obj => typeof obj === 'boolean',
+  number: obj => typeof obj === 'number',
+  string: obj => typeof obj === 'string',
+};
+
+function parseSchemaString(
   key: string,
-  schemaSimple: SimpleType,
+  schemaString: string,
   options: Options,
 ): ValidationFn {
-  const schema = typeof schemaSimple === 'string' && schemaSimple.endsWith('?')
-    ? schemaSimple.substring(0, schemaSimple.length - 1)
-    : schemaSimple;
+  const union = schemaString.split('|');
+  if (union.length !== 1) return parseSchemaUnion(key, union, options);
 
-  const fn = getSimpleValidationFn(key, schema, options);
+  const allowUndefined = schemaString.endsWith('?');
+  const schema = allowUndefined
+    ? schemaString.substring(0, schemaString.length - 1)
+    : schemaString;
 
-  const allowUndefined = schema !== schemaSimple;
+  const custom = (options.customTypes || {})[schema] || BUILT_INS[schema];
+  if (!custom) {
+    throw new InvalidSchemaError(`Unknown type for ${key}: ${schema}`);
+  }
 
-  return obj => (
-    allowUndefined && obj === undefined
-      ? []
-      : fn(obj)
-  );
+  const fn = (typeof custom !== 'function')
+    ? parseSchema(key, custom)
+    : parseSchemaFunction(key, custom, schema);
+
+  return allowUndefined
+    ? optional(fn)
+    : fn;
 }
 
 // === Object types ========================================================= //
@@ -115,13 +103,19 @@ function parseSchemaObject(
 
   const fns: ValidationFn[] = [
     ...schemaKeys
+      // Remove reserved keys from the schema
       .filter(k => !OBJ_RESERVED.includes(k))
+      // Map each key into a { k, fn } object where `k` is the subkey and `fn`
+      // is the parsed schema validator for that key's value
       .map(k => ({
         k,
         fn: parseSchemaAny(`${key}.${k}`, schemaObject[k], options),
       }))
+      // Map each { k, fn } object into a validation function by calling `fn`
+      // passing the `obj[k]` value.
       .map(i => (obj: any) => i.fn(obj[i.k])),
   ];
+
   if ((schemaObject as any).$strict !== false) {
     fns.push(noExtraKeys(key, schemaKeys));
   }
@@ -137,14 +131,9 @@ function parseSchemaObject(
 // === Array types ========================================================== //
 function parseSchemaArray(
   key: string,
-  schemaArray: ArrayType | UnionType,
+  schemaArray: ArrayType,
   options: Options,
 ): ValidationFn {
-  const first = schemaArray[0];
-  if (schemaArray.length === 1 && Array.isArray(first)) {
-    return oneOf(key, first.map(i => parseSchemaAny(key, i, options))); // union
-  }
-
   // Array of alternative types (e.g. string or object). Every item in the array
   // must match with at least one of the types.
   const fn = oneOf(
@@ -169,8 +158,15 @@ function parseSchemaAny(
   options: Options,
 ): ValidationFn {
   if (isObjectType(schema)) return parseSchemaObject(key, schema, options);
+  if (isUnionType(schema)) return parseSchemaUnion(key, schema[0], options);
   if (Array.isArray(schema)) return parseSchemaArray(key, schema, options);
-  return parseSchemaSimple(key, schema, options);
+  if (schema === undefined) return valueIs(key, undefined, 'undefined');
+  if (schema === null) return valueIs(key, null, 'null');
+  if (schema instanceof RegExp) return parseSchemaRegExp(key, schema);
+  if (typeof schema === 'string') {
+    return parseSchemaString(key, schema, options);
+  }
+  return parseSchemaFunction(key, schema, schema.name || 'custom value');
 }
 
 export const parseSchema = (
@@ -178,4 +174,4 @@ export const parseSchema = (
   schema: Type,
   options = DEFAULT_OPTIONS,
 ) =>
-  parseSchemaAny(key, schema, options);  
+  parseSchemaAny(key, schema, options);

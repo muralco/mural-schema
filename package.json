@@ -5,10 +5,13 @@
     "cucumber": "^4.2.1",
     "ts-node": "^7.0.0",
     "tslint": "^5.10.0",
+    "tslint-config-airbnb": "^5.9.2",
     "typescript": "^2.9.2"
   },
   "scripts": {
-    "watch": "tsc -w",
-    "test": "cucumber-js --require-module ts-node/register --tags 'not @ignore' -r src/test.ts"
+    "build": "npm run lint && tsc",
+    "lint": "tslint -p .",
+    "test": "cucumber-js --require-module ts-node/register --tags 'not @ignore' -r src/test.ts",
+    "watch": "tsc -w"
   }
 }
