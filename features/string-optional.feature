@@ -13,16 +13,16 @@ Scenario: success (not present)
 
 Scenario: error boolean
   When validating true
-  Then the validation error is "Expected string"
+  Then the validation error is "Expected string, undefined"
 
 Scenario: error number
   When validating 1
-  Then the validation error is "Expected string"
+  Then the validation error is "Expected string, undefined"
 
 Scenario: error object
   When validating { "a": 1 }
-  Then the validation error is "Expected string"
+  Then the validation error is "Expected string, undefined"
 
 Scenario: error array
   When validating []
-  Then the validation error is "Expected string"
+  Then the validation error is "Expected string, undefined"

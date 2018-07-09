@@ -3,13 +3,13 @@ export interface ObjectType {
   [key: string]: Type;
 }
 
-export type SimpleType =
+type SimpleType =
   string
   | RegExp
   | undefined
   | null;
 
-export type ScalarType = ObjectType | SimpleType;
+type ScalarType = ObjectType | SimpleType;
 export type ArrayType = ScalarType[];
 export type UnionType = ScalarType[][];
 
@@ -30,7 +30,7 @@ export interface ValidationError {
   expected?: string;
 }
 
-export type CheckFn = (obj: any) => boolean;
+type CheckFn = (obj: any) => boolean;
 
 export class InvalidSchemaError extends Error {}
 

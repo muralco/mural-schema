@@ -9,7 +9,7 @@ import {
 // === General purpose utils ================================================ //
 export const flatten = <T>(arr: T[][]): T[] => ([] as T[]).concat(...arr);
 
-export const difference = (xs: string[], ys: string[]): string[] =>
+const difference = (xs: string[], ys: string[]): string[] =>
   xs.filter(x => !ys.includes(x));
 
 export const isPlainObject = (o: any): boolean =>
@@ -86,11 +86,3 @@ export const valueIs = (
     obj === expectedValue
       ? []
       : [expected(key, name)];
-
-export const optional = (
-  fn: ValidationFn,
-): ValidationFn =>
-  obj =>
-    obj === undefined
-      ? []
-      : fn(obj);
