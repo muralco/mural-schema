@@ -1,0 +1,14 @@
+{
+  "devDependencies": {
+    "@types/cucumber": "^4.0.4",
+    "@types/node": "^10.5.2",
+    "cucumber": "^4.2.1",
+    "ts-node": "^7.0.0",
+    "tslint": "^5.10.0",
+    "typescript": "^2.9.2"
+  },
+  "scripts": {
+    "watch": "tsc -w",
+    "test": "cucumber-js --require-module ts-node/register --tags 'not @ignore' -r src/test.ts"
+  }
+}

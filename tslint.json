@@ -1,0 +1,39 @@
+{
+  "extends": ["tslint-config-airbnb", "tslint-react"],
+  "rules": {
+    "arrow-return-shorthand": true,
+    "import-name": false,
+    "jsx-alignment": false,
+    "jsx-boolean-value": [true, "never"],
+    "jsx-no-multiline-js": false,
+    "jsx-wrap-multiline": false,
+    "member-ordering": [
+      true,
+      {
+        "order": [
+          "static-field",
+          "instance-field",
+          "constructor",
+          "public-instance-method",
+          "protected-instance-method",
+          "private-instance-method"
+        ]
+      }
+    ],
+    "no-invalid-this": true,
+    "no-trailing-whitespace": true,
+    "one-line": [true, "check-open-brace"],
+    "variable-name": [true, "ban-keywords", "check-format", "allow-pascal-case"],
+    "whitespace": [
+      true,
+      "check-branch",
+      "check-decl",
+      "check-operator",
+      "check-module",
+      "check-separator",
+      "check-type",
+      "check-typecast",
+      "check-preblock"
+    ]
+  }
+}
