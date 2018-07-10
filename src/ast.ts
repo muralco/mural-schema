@@ -4,9 +4,13 @@ interface BaseAst {
   key: string;
 }
 
+export interface ObjectPropertyAst extends BaseAst {
+  ast: Ast;
+}
+
 export interface ObjectAst extends BaseAst {
   type: 'object';
-  properties: { ast: Ast; key: string; }[];
+  properties: ObjectPropertyAst[];
   strict: boolean;
 }
 

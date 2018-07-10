@@ -17,6 +17,7 @@ In the context of MURAL schema a _type_ can be any of the following:
 - an object mapping keys to other _types_ (e.g. `{ "a": "string" }`).
 - an array of _types_
 - a union of _types_
+- a literal _type_
 - a validation function
 - a custom _type_
 - optional _types_
@@ -152,6 +153,28 @@ For example:
 
 // a number or an object with a `name` string and `value` number
 [['number', { name: 'string', value: 'number' }]]
+```
+
+## Literal type
+
+> `1`, `'#good'`, `false`, `#red|#green`, etc.
+
+A _literal type_ is a schema _type_ defined by a single specific value. The input value must have the exact value defined by the _literal type_. 
+
+> Note: _string literals_ are prefixed with a `#` to distinguish them from built-in and custom types (e.g. `'#number'` represents the constant value _number_, while `'number'` represents a numeric value).
+
+> Note: when combining _literal types_ with a _union type_ you can create an _enumeration type_, that is, a _type_ that describes an input value that must be one of a pre-defined set of values.
+
+For example:
+```js
+// a constant value 1
+1
+
+// a constant string 'good'
+'#good'
+
+// a value that must be either 'red' or 'green' (enumeration type)
+'#red|#green'
 ```
 
 ## Validation function
