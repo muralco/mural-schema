@@ -6,6 +6,7 @@ import {
   RegExpAst,
   UnionAst,
   ValueAst,
+  LiteralAst,
 } from './ast';
 import {
   expected,
@@ -71,6 +72,15 @@ const parseFunction = (
   },
 });
 
+const parseLiteral = (
+  key: string,
+  schemaLiteral: number | boolean,
+): LiteralAst => ({
+  key,
+  type: 'literal',
+  value: schemaLiteral,
+});
+
 const BUILT_INS: TypeMap = {
   boolean: obj => typeof obj === 'boolean',
   number: obj => typeof obj === 'number',
@@ -89,6 +99,14 @@ function parseTypeName(
   const schema = allowUndefined
     ? schemaString.substring(0, schemaString.length - 1)
     : schemaString;
+
+  if (schema.startsWith('#')) {
+    return {
+      key,
+      type: 'literal',
+      value: schema.substring(1),
+    };
+  }
 
   const custom = (options.customTypes || {})[schema] || BUILT_INS[schema];
   if (!custom) {
@@ -162,5 +180,8 @@ export function parse(
   if (schema === null) return parseValue(key, null, 'null');
   if (schema instanceof RegExp) return parseRegExp(key, schema);
   if (typeof schema === 'string') return parseTypeName(key, schema, options);
+  if (typeof schema === 'number' || typeof schema === 'boolean') {
+    return parseLiteral(key, schema);
+  }
   return parseFunction(key, schema, schema.name || 'custom value');
 }

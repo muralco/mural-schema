@@ -3,8 +3,11 @@ export interface ObjectType {
   [key: string]: Type;
 }
 
+type LiteralType = string | number | boolean;
+
 type SimpleType =
   string
+  | LiteralType
   | RegExp
   | undefined
   | null;

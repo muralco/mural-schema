@@ -6,6 +6,7 @@ import {
   RegExpAst,
   UnionAst,
   ValueAst,
+  LiteralAst,
 } from './ast';
 import {
   allOf,
@@ -65,11 +66,18 @@ function compileArray(ast: ArrayAst): ValidationFn {
   };
 }
 
+const compileLiteral = (ast: LiteralAst): ValidationFn =>
+  obj =>
+    obj === ast.value
+      ? []
+      : [expected(ast.key, `${ast.value}`)];
+
 // === Global =============================================================== //
 export function compile(ast: Ast): ValidationFn {
   switch (ast.type) {
     case 'array': return compileArray(ast);
     case 'function': return compileFunction(ast);
+    case 'literal': return compileLiteral(ast);
     case 'object': return compileObject(ast);
     case 'regexp': return compileRegExp(ast);
     case 'union': return compileUnion(ast);

@@ -37,9 +37,15 @@ export interface FunctionAst extends BaseAst {
   fn: ValidationFn;
 }
 
+export interface LiteralAst extends BaseAst {
+  type: 'literal';
+  value: string | number | boolean;
+}
+
 export type Ast =
   ArrayAst
   | FunctionAst
+  | LiteralAst
   | ObjectAst
   | RegExpAst
   | UnionAst
