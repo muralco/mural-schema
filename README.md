@@ -133,7 +133,7 @@ For example:
 
 > `'string|number|MyCustomType'` or `[['boolean', { a: 'string' }, OtherType]]`
 
-Union schema types are the type-equivallents of the `OR` operator. A _union type_ is a set of _types_. The input value must match at least one of the _types_ included in the _union type_.
+Union schema types are the type-equivalents of the `OR` operator. A _union type_ is a set of _types_. The input value must match at least one of the _types_ included in the _union type_.
 
 There are two flavours for _union types_: _string unions_ and _array unions_.
 
@@ -231,10 +231,10 @@ Scalar       = Object | Simple;
 Object       = '{' , KeyValue , {',' , KeyValue} , '}';
 KeyValue     = string , ':' , Type;
 Simple       = string | RegExp | undefined | null;
-Array        = '[' , Type , ']';
+Array        = '[' , Type , {',' , Type} , ']';
 Union        = StringUnion | ArrayUnion;
 StringUnion  = string , {'|' , string};
-ArrayUnion   = '[[' , Type , ']]';
+ArrayUnion   = '[[' , Type , {',' , Type} , ']]';
 Function     = ValidationFn | CheckFn;
 ValidationFn = '(obj: any) => ValidationError[]';
 CheckFn      = '(obj: any) => boolean';
