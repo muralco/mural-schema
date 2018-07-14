@@ -41,6 +41,10 @@ export interface TypeMap {
   [type: string]: Type;
 }
 
-export interface Options {
+export interface ParseOptions {
   customTypes?: TypeMap;
+}
+
+export interface PrintOptions {
+  quote?: boolean;
 }

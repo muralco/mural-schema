@@ -1,8 +1,8 @@
 import { compile } from './compile';
 import { parse } from './parse';
-import { Options, Type } from './types';
+import { ParseOptions, Type } from './types';
 
-const DEFAULT_OPTIONS: Options = {};
+const DEFAULT_OPTIONS: ParseOptions = {};
 
 export const parseSchema = (
   key: string,

@@ -111,6 +111,8 @@ function generateType(
       return generateBuiltIn('number');
     case ts.SyntaxKind.BooleanKeyword:
       return generateBuiltIn('boolean');
+    case ts.SyntaxKind.AnyKeyword:
+      return generateBuiltIn('any');
     case ts.SyntaxKind.NullKeyword:
       return generateValue('null', null);
     case ts.SyntaxKind.UndefinedKeyword:

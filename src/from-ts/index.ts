@@ -1,8 +1,8 @@
 import { readFileSync } from 'fs';
 import * as ts from 'typescript';
+import { PrintOptions } from '../types';
+import { print } from '../print';
 import { parse } from './parse-to-ast';
-import { print } from './print';
-import { Options } from './types';
 
 const args = process.argv.slice(2);
 
@@ -23,7 +23,7 @@ if (!fileNames.length) {
   process.exit(-1);
 }
 
-const options: Options = {
+const options: PrintOptions = {
   quote: opts.some(o => o === '-q'),
 };
 
@@ -34,7 +34,7 @@ fileNames.forEach((fileName) => {
     ts.ScriptTarget.ES2015,
   );
 
-  const items = parse(sourceFile, options);
+  const items = parse(sourceFile, {});
 
   console.log(`// This file was generated DO NOT EDIT!
   \n${print(items, options)}`);

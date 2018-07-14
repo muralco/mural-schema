@@ -2,12 +2,13 @@ import {
   ArrayAst,
   Ast,
   FunctionAst,
+  LiteralAst,
   ObjectAst,
   RegExpAst,
   UnionAst,
   ValueAst,
-  LiteralAst,
 } from './ast';
+import builtIns from './built-ins';
 import {
   expected,
   isObjectType,
@@ -15,12 +16,11 @@ import {
 } from './util';
 import {
   ArrayType,
+  FunctionType,
   InvalidSchemaError,
   ObjectType,
-  Options,
+  ParseOptions,
   Type,
-  TypeMap,
-  FunctionType,
 } from './types';
 
 const parseRegExp = (
@@ -46,7 +46,7 @@ const parseValue = <T>(
 const parseUnion = (
   key: string,
   schemas: Type[],
-  options: Options,
+  options: ParseOptions,
 ): UnionAst => ({
   key,
   type: 'union',
@@ -81,16 +81,10 @@ const parseLiteral = (
   value: schemaLiteral,
 });
 
-const BUILT_INS: TypeMap = {
-  boolean: obj => typeof obj === 'boolean',
-  number: obj => typeof obj === 'number',
-  string: obj => typeof obj === 'string',
-};
-
 function parseTypeName(
   key: string,
   schemaString: string,
-  options: Options,
+  options: ParseOptions,
 ): Ast {
   const union = schemaString.split('|');
   if (union.length !== 1) return parseUnion(key, union, options);
@@ -108,7 +102,7 @@ function parseTypeName(
     };
   }
 
-  const custom = (options.customTypes || {})[schema] || BUILT_INS[schema];
+  const custom = (options.customTypes || {})[schema] || builtIns[schema];
   if (!custom) {
     throw new InvalidSchemaError(`Unknown type for ${key}: ${schema}`);
   }
@@ -132,7 +126,7 @@ const OBJ_RESERVED = ['$strict'];
 function parseObject(
   key: string,
   schemaObject: ObjectType,
-  options: Options,
+  options: ParseOptions,
 ): ObjectAst {
   const schemaKeys = Object
     .keys(schemaObject)
@@ -153,7 +147,7 @@ function parseObject(
 function parseArray(
   key: string,
   schemaArray: ArrayType,
-  options: Options,
+  options: ParseOptions,
 ): ArrayAst {
 
   const item = schemaArray.length === 1
@@ -171,7 +165,7 @@ function parseArray(
 export function parse(
   key: string,
   schema: Type,
-  options: Options,
+  options: ParseOptions,
 ): Ast {
   if (isObjectType(schema)) return parseObject(key, schema, options);
   if (isUnionType(schema)) return parseUnion(key, schema[0], options);
