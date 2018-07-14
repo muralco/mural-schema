@@ -52,7 +52,7 @@ if (!errors.length) {
 
 ## Built-ins
 
-> `'string'`, `'boolean'`, `'number'`, `undefined`, `null`
+> `'string'`, `'boolean'`, `'number'`, `undefined`, `null`, `any`
 
 To represent a built-in, just use the string name of the type in the schema.
 
@@ -63,6 +63,21 @@ For example:
 
 // an object whose `s` key must be a string
 { s: 'string' } 
+
+// a boolean
+'boolean'
+
+// a number
+'number'
+
+// undefined
+undefined
+
+// null
+null
+
+// anything
+'any'
 ```
 
 ## RegExp
