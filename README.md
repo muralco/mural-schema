@@ -241,7 +241,9 @@ const errors = fn({ billingEmail: 'not an email' });
 
 > `'string?'`, `'MyCustomType?'` or `[[Type, undefined]]`
 
-Optional types are _types_ whose value can also be `undefined`. There are two flavours of _optional types_: _optional strings_ and _optional unions_`.
+Optional types are _types_ whose value can also be `undefined`. There are three flavours of _optional types_: _optional object keys_, _optional strings_ and _optional unions_`.
+
+Optional object keys are the most frequent optional type, and likely the only one you'll ever need. Given an object type `{ "key": Type }` you can make `key` optional by appending a `?` like: `{ "key?": Type }`.
 
 Given a string type `T` (e.g. `number`), you can always make it optional by appending a `?` to the type (e.g. `number?`).
 
@@ -249,6 +251,19 @@ For complex types (e.g. objects, arrays, functions, etc.) you can simulate an op
 
 For example:
 ```js
+// some optional object keys
+{
+  // see the `?` suffix in the key
+  'objectKeyOptional?': 'string',
+
+  // same but with the `?` suffix in the value
+  'stringTypeOptional': 'string?',
+
+  // the nice thing about putting the `?` in the keys is that it allow complex
+  // optionals that not just type name strings, such as children schemas:
+  'superComplexOptional?': { a: 'string' },
+}
+
 // an optional string
 'string?'
 

@@ -4,6 +4,7 @@ import {
   FunctionAst,
   LiteralAst,
   ObjectAst,
+  ObjectPropertyAst,
   RegExpAst,
   UnionAst,
   ValueAst,
@@ -30,9 +31,30 @@ const printLiteral = (ast: LiteralAst): string =>
     ? `'#${ast.value}'`
     : `${ast.value}`;
 
+const isUndefined = (ast: Ast): boolean =>
+  ast.type === 'value' && ast.value === undefined;
+
+const printObjectProperty = (
+  { ast, key }: ObjectPropertyAst,
+  options: PrintOptions,
+) => {
+  if (
+    ast.type === 'union'
+    && ast.items.length === 2
+    && ast.items.some(isUndefined)
+  ) {
+    const other = ast.items.find(i => !isUndefined(i));
+    if (other) {
+      return `'${key}?': ${padd(printAny(other, options))}`;
+    }
+  }
+
+  return `${key}: ${padd(printAny(ast, options))}`;
+};
+
 const printObject = (ast: ObjectAst, options: PrintOptions): string =>
   `{${!ast.strict ? '\n  $strict: false,' : ''}${ast.properties
-      .map(p => `\n  ${p.key}: ${padd(printAny(p.ast, options))},`)
+      .map(p => `\n  ${printObjectProperty(p, options)},`)
     . join('')
     }\n}`;
 
@@ -45,8 +67,7 @@ const printUnion = (ast: UnionAst, options: PrintOptions): string => {
     || i.type === 'literal',
   );
 
-  const allowUndefined = ast.items
-    .find(i => i.type === 'value' && i.value === undefined);
+  const allowUndefined = ast.items.find(isUndefined);
 
   if (useString && ast.items.length === 2 && allowUndefined) {
     const item = ast.items.find(i => i !== allowUndefined);

@@ -47,3 +47,18 @@ Scenario: error nested
   Given a schema { "key": { "n": "number" } }
   When validating { "key": { "n": true } }
   Then the validation error is "Expected number" at [body.key.n]
+
+Scenario: success optional key not present
+  Given a schema { "key?": "number" }
+  When validating {}
+  Then the validation passes
+
+Scenario: success optional key present
+  Given a schema { "key?": "number" }
+  When validating { "key": 1 }
+  Then the validation passes
+
+Scenario: success optional key wrong type
+  Given a schema { "key?": "number" }
+  When validating { "key": "one" }
+  Then the validation error is "Expected number, undefined" at [body.key]

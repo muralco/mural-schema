@@ -4,6 +4,7 @@ import {
   FunctionAst,
   LiteralAst,
   ObjectAst,
+  ObjectPropertyAst,
   RegExpAst,
   UnionAst,
   ValueAst,
@@ -81,6 +82,15 @@ const parseLiteral = (
   value: schemaLiteral,
 });
 
+const makeOptional = (
+  key: string,
+  ast: Ast,
+): UnionAst => ({
+  key,
+  type: 'union',
+  items: [ast, parseValue(key, undefined, 'undefined')],
+});
+
 function parseTypeName(
   key: string,
   schemaString: string,
@@ -112,16 +122,34 @@ function parseTypeName(
     : parseFunction(key, custom, schema);
 
   return allowUndefined
-    ? {
-      key,
-      type: 'union',
-      items: [ast, parseValue(key, undefined, 'undefined')],
-    }
+    ? makeOptional(key, ast)
     : ast;
 }
 
 // === Object types ========================================================= //
 const OBJ_RESERVED = ['$strict'];
+
+function parseMakeOptional(
+  parentKey: string,
+  key: string,
+  schema: Type,
+  options: ParseOptions,
+): ObjectPropertyAst {
+  const isOptional = key.endsWith('?');
+  const actualKey = isOptional
+    ? key.substring(0, key.length - 1)
+    : key;
+
+  const fullKey = `${parentKey}.${actualKey}`;
+
+  const ast = parse(fullKey, schema, options);
+  return {
+    ast: isOptional
+      ? makeOptional(fullKey, ast)
+      : ast,
+    key: actualKey,
+  };
+}
 
 function parseObject(
   key: string,
@@ -134,10 +162,8 @@ function parseObject(
 
   return {
     key,
-    properties: schemaKeys.map(k => ({
-      ast: parse(`${key}.${k}`, schemaObject[k], options),
-      key: k,
-    })),
+    properties: schemaKeys
+      .map(k => parseMakeOptional(key, k, schemaObject[k], options)),
     strict: (schemaObject as any).$strict !== false,
     type: 'object',
   };
