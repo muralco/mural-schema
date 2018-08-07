@@ -8,7 +8,7 @@ Scenario: success string
 Scenario: error string
   Given a schema "#good"
   When validating "bad"
-  Then the validation error is "Expected good"
+  Then the validation error is "Expected 'good'"
 
 Scenario: success boolean
   Given a schema true
@@ -43,4 +43,14 @@ Scenario: success string union 2
 Scenario: error string union
   Given a schema "#good|#ok"
   When validating "bad"
-  Then the validation error is "Expected good, ok"
+  Then the validation error is "Expected 'good', 'ok'"
+
+Scenario: success string union single quote
+  Given a schema "'very good'|'very bad'"
+  When validating "very good"
+  Then the validation passes
+
+Scenario: error string union single quote
+  Given a schema "'very good'|'very bad'"
+  When validating "very mild"
+  Then the validation error is "Expected 'very good', 'very bad'"

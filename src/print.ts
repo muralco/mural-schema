@@ -28,7 +28,7 @@ const printFunction = (ast: FunctionAst, options: PrintOptions): string =>
 
 const printLiteral = (ast: LiteralAst): string =>
   typeof ast.value === 'string'
-    ? `'#${ast.value}'`
+    ? `'"${ast.value}"'`
     : `${ast.value}`;
 
 const isUndefined = (ast: Ast): boolean =>

@@ -91,6 +91,9 @@ const makeOptional = (
   items: [ast, parseValue(key, undefined, 'undefined')],
 });
 
+const startsAndEndsWith = (s: string, delim: string): boolean =>
+  s.startsWith(delim) && s.endsWith(delim);
+
 function parseTypeName(
   key: string,
   schemaString: string,
@@ -109,6 +112,17 @@ function parseTypeName(
       key,
       type: 'literal',
       value: schema.substring(1),
+    };
+  }
+
+  if (startsAndEndsWith(schema, '"')
+    || startsAndEndsWith(schema, '\'')
+    || startsAndEndsWith(schema, '`')
+  ) {
+    return {
+      key,
+      type: 'literal',
+      value: schema.substring(1, schema.length - 1),
     };
   }
 

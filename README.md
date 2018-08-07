@@ -172,11 +172,11 @@ For example:
 
 ## Literal type
 
-> `1`, `'#good'`, `false`, `#red|#green`, etc.
+> `1`, `false`, `'"good"'`, `"'good'"`, ``'`good`'``, `'#good'`, `'#red|#green'`, etc.
 
 A _literal type_ is a schema _type_ defined by a single specific value. The input value must have the exact value defined by the _literal type_. 
 
-> Note: _string literals_ are prefixed with a `#` to distinguish them from built-in and custom types (e.g. `'#number'` represents the constant value _number_, while `'number'` represents a numeric value).
+> Note: _string literals_ can either be quoted with `"`, `'` or `` ` ``, or prefixed with a `#` to distinguish them from built-in and custom types (e.g. `'"number"'`, `"'number'"`, ``'`number`'`` and `'#number'` represent the constant value _number_, while `'number'` represents a numeric value).
 
 > Note: when combining _literal types_ with a _union type_ you can create an _enumeration type_, that is, a _type_ that describes an input value that must be one of a pre-defined set of values.
 
@@ -185,7 +185,10 @@ For example:
 // a constant value 1
 1
 
-// a constant string 'good'
+// a constant string 'good' (all examples below are interchangeable)
+'"good"'
+"'good'"
+'`good`'
 '#good'
 
 // a value that must be either 'red' or 'green' (enumeration type)

@@ -66,11 +66,16 @@ function compileArray(ast: ArrayAst): ValidationFn {
   };
 }
 
+const quoteLiteral = (value: LiteralAst['value']): string =>
+  typeof value === 'string'
+    ? `'${value}'`
+    : `${value}`;
+
 const compileLiteral = (ast: LiteralAst): ValidationFn =>
   obj =>
     obj === ast.value
       ? []
-      : [expected(ast.key, `${ast.value}`)];
+      : [expected(ast.key, quoteLiteral(ast.value))];
 
 // === Global =============================================================== //
 export function compile(ast: Ast): ValidationFn {
