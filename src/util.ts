@@ -31,8 +31,8 @@ export const error = (key: string, message: string): ValidationError => ({
 });
 
 export const expected = (key: string, what: string): ValidationError => ({
-  key,
   expected: what,
+  key,
   message: `Expected ${what}`,
 });
 

@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import * as ts from 'typescript';
-import { PrintOptions } from '../types';
 import { print } from '../print';
+import { PrintOptions } from '../types';
 import { parse } from './parse-to-ast';
 
 const args = process.argv.slice(2);

@@ -21,10 +21,10 @@ const setSchema = (schema: string) => {
       customTypes: {
         email: obj => typeof obj === 'string' && obj.includes('@'),
         Person: {
-          first: 'string',
-          middle: 'string?',
-          last: 'string',
           age: 'number?',
+          first: 'string',
+          last: 'string',
+          middle: 'string?',
         },
       },
     },

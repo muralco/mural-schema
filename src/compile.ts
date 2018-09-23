@@ -2,16 +2,17 @@ import {
   ArrayAst,
   Ast,
   FunctionAst,
+  LiteralAst,
   ObjectAst,
   RegExpAst,
   UnionAst,
   ValueAst,
-  LiteralAst,
 } from './ast';
+import { InvalidSchemaError, ValidationFn } from './types';
 import {
   allOf,
-  expected,
   error,
+  expected,
   flatten,
   isPlainObject,
   noExtraKeys,
@@ -19,7 +20,6 @@ import {
   replaceKey,
   valueIs,
 } from './util';
-import { InvalidSchemaError, ValidationFn } from './types';
 
 const compileRegExp = (ast: RegExpAst): ValidationFn =>
   (obj) => {

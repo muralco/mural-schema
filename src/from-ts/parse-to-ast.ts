@@ -38,17 +38,17 @@ function generateRegEx(node: ts.TypeReferenceNode): RegExpAst {
 const generateArray = (
   type: ts.ArrayTypeNode,
 ): ArrayAst => ({
+  item: generateType(type.elementType),
   key: '',
   type: 'array',
-  item: generateType(type.elementType),
 });
 
 const generateUnion = (
   node: ts.UnionTypeNode,
 ): UnionAst => ({
+  items: node.types.map(t => generateType(t)),
   key: '',
   type: 'union',
-  items: node.types.map(t => generateType(t)),
 });
 
 const FN = () => [];
@@ -61,18 +61,18 @@ const generateTypeRef = (
   if (isRegExp) return generateRegEx(node);
 
   return {
-    name,
-    key: 'ref',
-    type: 'function',
     fn: FN,
+    key: 'ref',
+    name,
+    type: 'function',
   };
 };
 
 const generateBuiltIn = (s: string): FunctionAst => ({
-  key: '',
-  type: 'function',
-  name: s,
   fn: FN,
+  key: '',
+  name: s,
+  type: 'function',
 });
 
 const generateLiteral = (node: ts.LiteralTypeNode): LiteralAst => ({
@@ -88,10 +88,10 @@ const generateLiteral = (node: ts.LiteralTypeNode): LiteralAst => ({
 });
 
 const generateValue = <T>(name: string, value: T): ValueAst<T> => ({
-  name,
-  value,
   key: '',
+  name,
   type: 'value',
+  value,
 });
 
 function generateType(
@@ -119,10 +119,10 @@ function generateType(
       return generateValue('undefined', undefined);
     default: {
       return {
-        type: 'function',
+        fn: FN,
         key: ts.SyntaxKind[type.kind],
         name: `Unkown type: ${ts.SyntaxKind[type.kind]}`,
-        fn: FN,
+        type: 'function',
       };
     }
   }
@@ -135,9 +135,9 @@ const generateAttributeValue = (
   const ast = generateType(node.type);
   return !!node.questionToken
     ? {
+      items: [ast, generateValue('undefined', undefined)],
       key: '',
       type: 'union',
-      items: [ast, generateValue('undefined', undefined)],
     }
     : ast;
 };
@@ -145,8 +145,8 @@ const generateAttributeValue = (
 const generateAttribute = (
   node: ts.PropertySignature,
 ): ObjectPropertyAst => ({
-  key: getName(node.name),
   ast: generateAttributeValue(node),
+  key: getName(node.name),
 });
 
 function generateObject(
@@ -155,12 +155,12 @@ function generateObject(
   const strict = !node.members.find(ts.isIndexSignatureDeclaration);
 
   return {
-    strict,
     key: '',
-    type: 'object',
     properties: node.members
       .filter(ts.isPropertySignature)
       .map(m => generateAttribute(m)),
+    strict,
+    type: 'object',
   };
 }
 

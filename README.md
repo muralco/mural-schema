@@ -1,9 +1,18 @@
 MURAL schema
 ============
 
-## Descirption
+## Summary
 
-MURAL schema is a simple way of validating JSON objects, using pure JSON objects without all the clutter of JSON Schema.
+MURAL schema is a simple way of validating JSON objects, using pure JSON objects
+without all the clutter of JSON Schema.
+
+## Installation
+
+```sh
+npm i mural-schema
+```
+
+## Descirption
 
 In the context of MURAL schema a _type_ can be any of the following:
 
@@ -84,9 +93,11 @@ null
 
 > `/^\d{3}-\d{5}$/`
 
-When the schema's type is a RegExp, the value must be a string that matches that RegExp.
+When the schema's type is a RegExp, the value must be a string that matches that
+RegExp.
 
-> Note: consider using anchors in the RegExp (e.g. `/\A...\z/` or `/^...$/`) to avoid unexpected values
+> Note: consider using anchors in the RegExp (e.g. `/\A...\z/` or `/^...$/`) to
+avoid unexpected values
 
 For example:
 ```js
@@ -107,9 +118,12 @@ For example:
 
 A schema type can be an object with arbitrary keys and _types_ in the values.
 
-Since any _type_ is allowed in the object's value, nested objects can be modeled by nesting object schemas.
+Since any _type_ is allowed in the object's value, nested objects can be modeled
+by nesting object schemas.
 
-> Note: the special key/value `$strict: false` can be specified in object schemas to allow extra keys to be present in the input object. By default the input object cannot have any unknown key.
+> Note: the special key/value `$strict: false` can be specified in object
+schemas to allow extra keys to be present in the input object. By default the
+input object cannot have any unknown key.
 
 For example:
 ```js
@@ -132,9 +146,11 @@ For example:
 
 A schema type can be an array _types_.
 
-When the schema array contains a single _type_, every element in the input array must match this _type_ (i.e. homogeneous array).
+When the schema array contains a single _type_, every element in the input array
+must match this _type_ (i.e. homogeneous array).
 
-When the schema array contains multiple _types_, the element in the input array can be of _any_ of the array types (i.e. heterogeneous array).
+When the schema array contains multiple _types_, the element in the input array
+can be of _any_ of the array types (i.e. heterogeneous array).
 
 For example:
 ```js
@@ -149,13 +165,18 @@ For example:
 
 > `'string|number|MyCustomType'` or `[['boolean', { a: 'string' }, OtherType]]`
 
-Union schema types are the type-equivalents of the `OR` operator. A _union type_ is a set of _types_. The input value must match at least one of the _types_ included in the _union type_.
+Union schema types are the type-equivalents of the `OR` operator. A _union type_
+is a set of _types_. The input value must match at least one of the _types_
+included in the _union type_.
 
 There are two flavours for _union types_: _string unions_ and _array unions_.
 
-String unions can be used only with string types (i.e. built-ins and custom types).
+String unions can be used only with string types (i.e. built-ins and custom
+types).
 
-Array unions are a generalization of the above that can be used with any set of _types_, at the expense of some syntactic noise. Unlike string unions, array unions can also be used with objects, functions, RegExps, etc.
+Array unions are a generalization of the above that can be used with any set of
+_types_, at the expense of some syntactic noise. Unlike string unions, array
+unions can also be used with objects, functions, RegExps, etc.
 
 
 For example:
@@ -172,13 +193,20 @@ For example:
 
 ## Literal type
 
-> `1`, `false`, `'"good"'`, `"'good'"`, ``'`good`'``, `'#good'`, `'#red|#green'`, etc.
+> `1`, `false`, `'"good"'`, `"'good'"`, ``'`good`'``, `'#good'`,
+`'#red|#green'`, etc.
 
-A _literal type_ is a schema _type_ defined by a single specific value. The input value must have the exact value defined by the _literal type_. 
+A _literal type_ is a schema _type_ defined by a single specific value. The
+input value must have the exact value defined by the _literal type_. 
 
-> Note: _string literals_ can either be quoted with `"`, `'` or `` ` ``, or prefixed with a `#` to distinguish them from built-in and custom types (e.g. `'"number"'`, `"'number'"`, ``'`number`'`` and `'#number'` represent the constant value _number_, while `'number'` represents a numeric value).
+> Note: _string literals_ can either be quoted with `"`, `'` or `` ` ``, or
+prefixed with a `#` to distinguish them from built-in and custom types (e.g.
+`'"number"'`, `"'number'"`, ``'`number`'`` and `'#number'` represent the
+constant value _number_, while `'number'` represents a numeric value).
 
-> Note: when combining _literal types_ with a _union type_ you can create an _enumeration type_, that is, a _type_ that describes an input value that must be one of a pre-defined set of values.
+> Note: when combining _literal types_ with a _union type_ you can create an
+_enumeration type_, that is, a _type_ that describes an input value that must
+be one of a pre-defined set of values.
 
 For example:
 ```js
@@ -199,7 +227,9 @@ For example:
 
 > `(obj: any) => boolean` or `(obj: any) => ValidationError[]`
 
-A function schema _type_ is a function that takes the input values and returns either a _boolean_ (i.e. `true` for success, `false` for failure), or an array of validation errors (i.e. empty array for success).
+A function schema _type_ is a function that takes the input values and returns
+either a _boolean_ (i.e. `true` for success, `false` for failure), or an array
+of validation errors (i.e. empty array for success).
 
 For example:
 ```js
@@ -220,7 +250,8 @@ obj => {
 
 > `options: { customTypes: { name: Type, ... } }`
 
-You can register _custom types_ to be used for schema validation. Custom _types_ are actually aliases for other types.
+You can register _custom types_ to be used for schema validation. Custom _types_
+are actually aliases for other types.
 
 Custom types are passed as part of the `options` argument to `parseSchema`.
 
@@ -244,13 +275,19 @@ const errors = fn({ billingEmail: 'not an email' });
 
 > `'string?'`, `'MyCustomType?'` or `[[Type, undefined]]`
 
-Optional types are _types_ whose value can also be `undefined`. There are three flavours of _optional types_: _optional object keys_, _optional strings_ and _optional unions_`.
+Optional types are _types_ whose value can also be `undefined`. There are three
+flavours of _optional types_: _optional object keys_, _optional strings_ and
+_optional unions_`.
 
-Optional object keys are the most frequent optional type, and likely the only one you'll ever need. Given an object type `{ "key": Type }` you can make `key` optional by appending a `?` like: `{ "key?": Type }`.
+Optional object keys are the most frequent optional type, and likely the only
+one you'll ever need. Given an object type `{ "key": Type }` you can make `key`
+optional by appending a `?` like: `{ "key?": Type }`.
 
-Given a string type `T` (e.g. `number`), you can always make it optional by appending a `?` to the type (e.g. `number?`).
+Given a string type `T` (e.g. `number`), you can always make it optional by
+appending a `?` to the type (e.g. `number?`).
 
-For complex types (e.g. objects, arrays, functions, etc.) you can simulate an optional type `T` as a union of `T` and `undefined`. 
+For complex types (e.g. objects, arrays, functions, etc.) you can simulate an
+optional type `T` as a union of `T` and `undefined`. 
 
 For example:
 ```js
@@ -279,7 +316,8 @@ For example:
 
 ## EBNF
 
-Finally, if you enjoy formal violence, here is a _sort-of-EBNF_ summarizing most of the above.
+Finally, if you enjoy formal violence, here is a _sort-of-EBNF_ summarizing most
+of the above.
 
 ```ebnf
 Type         = Scalar | Array | Union | Function;

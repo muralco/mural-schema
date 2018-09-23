@@ -1,17 +1,34 @@
 {
+  "name": "mural-schema",
+  "version": "1.0.0",
+  "description": "A JSON validation library using pure JSON schemas",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/muralco/mural-schema.git"
+  },
+  "author": "MURAL",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/muralco/mural-schema/issues"
+  },
+  "homepage": "https://github.com/muralco/mural-schema",
   "devDependencies": {
     "@types/cucumber": "^4.0.4",
     "@types/node": "^10.5.2",
     "cucumber": "^4.2.1",
-    "ts-node": "^7.0.0",
+    "ts-node": "^7.0.1",
     "ts-unused-exports": "^2.0.10",
-    "tslint": "^5.10.0",
+    "tslint": "^5.11.0",
     "tslint-config-airbnb": "^5.9.2",
-    "typescript": "^2.9.2"
+    "typescript": "^3.0.3"
   },
   "scripts": {
     "build": "npm run lint && tsc",
+    "dist": "rm -rf dist && npm run build && npm run test && cp package*.json README.md LICENSE dist && rm dist/test.*",
     "lint": "tslint -p . && ts-unused-exports tsconfig.json",
+    "pack": "npm run dist && cd dist && npm pack",
     "test": "cucumber-js --require-module ts-node/register --tags 'not @ignore' -r src/test.ts",
     "watch": "tsc -w"
   }

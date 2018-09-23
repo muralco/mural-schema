@@ -11,11 +11,6 @@ import {
 } from './ast';
 import builtIns from './built-ins';
 import {
-  expected,
-  isObjectType,
-  isUnionType,
-} from './util';
-import {
   ArrayType,
   FunctionType,
   InvalidSchemaError,
@@ -23,14 +18,19 @@ import {
   ParseOptions,
   Type,
 } from './types';
+import {
+  expected,
+  isObjectType,
+  isUnionType,
+} from './util';
 
 const parseRegExp = (
   key: string,
   schema: RegExp,
 ): RegExpAst => ({
   key,
-  value: schema,
   type:  'regexp',
+  value: schema,
 });
 
 const parseValue = <T>(
@@ -40,8 +40,8 @@ const parseValue = <T>(
 ): ValueAst<T> => ({
   key,
   name,
-  value,
   type: 'value',
+  value,
 });
 
 const parseUnion = (
@@ -49,9 +49,9 @@ const parseUnion = (
   schemas: Type[],
   options: ParseOptions,
 ): UnionAst => ({
+  items: schemas.map(s => parse(key, s, options)),
   key,
   type: 'union',
-  items: schemas.map(s => parse(key, s, options)),
 });
 
 const parseFunction = (
@@ -59,18 +59,18 @@ const parseFunction = (
   schemaFunction: FunctionType,
   name: string,
 ): FunctionAst => ({
-  key,
-  name,
-  type: 'function',
   fn: (obj) => {
     const error = schemaFunction(obj);
     if (typeof error === 'boolean') {
       return error
-        ? []
-        : [expected(key, name)];
+      ? []
+      : [expected(key, name)];
     }
     return error;
   },
+  key,
+  name,
+  type: 'function',
 });
 
 const parseLiteral = (
@@ -86,9 +86,9 @@ const makeOptional = (
   key: string,
   ast: Ast,
 ): UnionAst => ({
+  items: [ast, parseValue(key, undefined, 'undefined')],
   key,
   type: 'union',
-  items: [ast, parseValue(key, undefined, 'undefined')],
 });
 
 const startsAndEndsWith = (s: string, delim: string): boolean =>
@@ -195,8 +195,8 @@ function parseArray(
     : parseUnion(key, schemaArray, options);
 
   return {
-    key,
     item,
+    key,
     type: 'array',
   };
 }
