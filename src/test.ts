@@ -15,7 +15,6 @@ const parseJSON = (s: string) =>
 
 const setSchema = (schema: string) => {
   ctx.$schema = parseSchema(
-    'body',
     parseJSON(schema),
     {
       customTypes: {
@@ -48,7 +47,7 @@ Then(/^the validation error is "(.*)"(?: at \[(.*)\])?$/, (msg, key) => {
   assert.strictEqual(ctx.$errors.length, 1, 'Expected a single error');
   const error = ctx.$errors[0];
   assert.strictEqual(error.message, msg);
-  if (key) assert.strictEqual(error.key, key);
+  if (key) assert.strictEqual(error.key.join('.'), key);
 });
 Then(/^the validation error is$/, (expected) => {
   assert.strictEqual(ctx.$errors.length, 1, 'Expected a single error');

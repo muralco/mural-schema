@@ -1,11 +1,12 @@
-import { ValidationFn } from './types';
+import { Key, ValidationFn } from './types';
 
 interface BaseAst {
-  key: string;
+  key: Key;
 }
 
 export interface ObjectPropertyAst extends BaseAst {
   ast: Ast;
+  objectKey: string;
 }
 
 export interface ObjectAst extends BaseAst {

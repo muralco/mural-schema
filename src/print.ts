@@ -20,7 +20,7 @@ const printArray = (ast: ArrayAst, options: PrintOptions): string =>
     : `[${printAny(ast.item, options)}]`;
 
 const printFunction = (ast: FunctionAst, options: PrintOptions): string =>
-  ast.key === 'ref'
+  ast.key.join('.') === 'ref'
     ? options.quote
       ? `'${ast.name}'`
       : `${ast.name}`
@@ -62,7 +62,7 @@ const printRegExp = (ast: RegExpAst): string => ast.value.toString();
 
 const printUnion = (ast: UnionAst, options: PrintOptions): string => {
   const useString = ast.items.every(i =>
-    i.type === 'function' && (options.quote || i.key !== 'ref')
+    i.type === 'function' && (options.quote || i.key.join('.') !== 'ref')
     || i.type === 'value'
     || i.type === 'literal',
   );

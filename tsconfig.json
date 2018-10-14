@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "es2015",
     "module": "commonjs",
     "outDir": "./dist",
     "noImplicitAny": true,
@@ -10,7 +10,7 @@
     "noUnusedParameters": true,
     "noUnusedLocals": true,
     "alwaysStrict": true,
-    "declaration": false,
+    "declaration": true,
     "sourceMap": true,
     "baseUrl": "./src",
     "lib": [

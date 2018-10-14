@@ -1,6 +1,6 @@
 Feature: literal
 
-Scenario: success string
+Scenario: success hashed string
   Given a schema "#good"
   When validating "good"
   Then the validation passes
@@ -9,6 +9,16 @@ Scenario: error string
   Given a schema "#good"
   When validating "bad"
   Then the validation error is "Expected 'good'"
+
+Scenario: success single-quoted string
+  Given a schema "'good'"
+  When validating "good"
+  Then the validation passes
+
+Scenario: success double-quoted string
+  Given a schema "\"good\""
+  When validating "good"
+  Then the validation passes
 
 Scenario: success boolean
   Given a schema true

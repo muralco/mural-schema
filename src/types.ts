@@ -27,9 +27,11 @@ export type Type =
   | FunctionType;
 
 // === Process types ======================================================== //
+export type Key = (string|number)[];
+
 export interface ValidationError {
   message: string;
-  key: string;
+  key: Key;
   expected?: string;
 }
 

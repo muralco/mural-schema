@@ -14,6 +14,7 @@ import {
   ArrayType,
   FunctionType,
   InvalidSchemaError,
+  Key,
   ObjectType,
   ParseOptions,
   Type,
@@ -25,7 +26,7 @@ import {
 } from './util';
 
 const parseRegExp = (
-  key: string,
+  key: Key,
   schema: RegExp,
 ): RegExpAst => ({
   key,
@@ -34,7 +35,7 @@ const parseRegExp = (
 });
 
 const parseValue = <T>(
-  key: string,
+  key: Key,
   value: T,
   name: string,
 ): ValueAst<T> => ({
@@ -45,7 +46,7 @@ const parseValue = <T>(
 });
 
 const parseUnion = (
-  key: string,
+  key: Key,
   schemas: Type[],
   options: ParseOptions,
 ): UnionAst => ({
@@ -55,7 +56,7 @@ const parseUnion = (
 });
 
 const parseFunction = (
-  key: string,
+  key: Key,
   schemaFunction: FunctionType,
   name: string,
 ): FunctionAst => ({
@@ -74,7 +75,7 @@ const parseFunction = (
 });
 
 const parseLiteral = (
-  key: string,
+  key: Key,
   schemaLiteral: number | boolean,
 ): LiteralAst => ({
   key,
@@ -83,7 +84,7 @@ const parseLiteral = (
 });
 
 const makeOptional = (
-  key: string,
+  key: Key,
   ast: Ast,
 ): UnionAst => ({
   items: [ast, parseValue(key, undefined, 'undefined')],
@@ -95,7 +96,7 @@ const startsAndEndsWith = (s: string, delim: string): boolean =>
   s.startsWith(delim) && s.endsWith(delim);
 
 function parseTypeName(
-  key: string,
+  key: Key,
   schemaString: string,
   options: ParseOptions,
 ): Ast {
@@ -144,7 +145,7 @@ function parseTypeName(
 const OBJ_RESERVED = ['$strict'];
 
 function parseMakeOptional(
-  parentKey: string,
+  parentKey: Key,
   key: string,
   schema: Type,
   options: ParseOptions,
@@ -154,19 +155,20 @@ function parseMakeOptional(
     ? key.substring(0, key.length - 1)
     : key;
 
-  const fullKey = `${parentKey}.${actualKey}`;
+  const fullKey = [...parentKey, actualKey];
 
   const ast = parse(fullKey, schema, options);
   return {
     ast: isOptional
       ? makeOptional(fullKey, ast)
       : ast,
-    key: actualKey,
+    key: fullKey,
+    objectKey: actualKey,
   };
 }
 
 function parseObject(
-  key: string,
+  key: Key,
   schemaObject: ObjectType,
   options: ParseOptions,
 ): ObjectAst {
@@ -185,7 +187,7 @@ function parseObject(
 
 // === Array types ========================================================== //
 function parseArray(
-  key: string,
+  key: Key,
   schemaArray: ArrayType,
   options: ParseOptions,
 ): ArrayAst {
@@ -203,7 +205,7 @@ function parseArray(
 
 // === Global =============================================================== //
 export function parse(
-  key: string,
+  key: Key,
   schema: Type,
   options: ParseOptions,
 ): Ast {

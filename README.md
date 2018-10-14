@@ -40,10 +40,7 @@ import { parseSchema } from 'mural-schema';
 const schema = // define the schema
 const options = {}; // you can omit this argument
 
-// Note: `body` identifies the input we are trying to validate,
-// in this example a request body. You can also use `root` or
-// whatever makes sense in your scenario.
-const validate = parseSchema('body', schema, options);
+const validate = parseSchema(schema, options);
 
 // do note that `parseSchema` will throw if `schema` is invalid
 // (e.g. it references unknown types)

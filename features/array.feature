@@ -18,9 +18,9 @@ Scenario: error invalid type
 Scenario: error invalid array type
   Given a schema ["number"]
   When validating [0, true]
-  Then the validation error is "Expected number" at [body.1]
+  Then the validation error is "Expected number" at [1]
 
 Scenario: error invalid array object type
   Given a schema [{ "a": "string" }]
   When validating [{ "a": 123 }]
-  Then the validation error is "Expected string" at [body.0.a]
+  Then the validation error is "Expected string" at [0.a]

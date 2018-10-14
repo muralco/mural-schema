@@ -24,4 +24,4 @@ Scenario: success Person?
 Scenario: error Person
   Given a schema "Person"
   When validating { "first": "Peter" }
-  Then the validation error is "Expected string" at [body.last]
+  Then the validation error is "Expected string" at [last]

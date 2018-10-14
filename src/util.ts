@@ -1,4 +1,5 @@
 import {
+  Key,
   ObjectType,
   Type,
   UnionType,
@@ -25,29 +26,23 @@ export const isUnionType = (o: Type): o is UnionType =>
   Array.isArray(o) && o.length === 1 && Array.isArray(o[0]);
 
 // === Errors =============================================================== //
-export const error = (key: string, message: string): ValidationError => ({
+export const error = (key: Key, message: string): ValidationError => ({
   key,
   message,
 });
 
-export const expected = (key: string, what: string): ValidationError => ({
+export const expected = (key: Key, what: string): ValidationError => ({
   expected: what,
   key,
   message: `Expected ${what}`,
 });
-
-export const replaceKey = (find: string, replace: string) =>
-  (error: ValidationError) => ({
-    ...error,
-    key: error.key.replace(find, replace),
-  });
 
 // === Validators and combinators =========================================== //
 
 // Returns a validation function that fails if every function in `validationFns`
 // fails.
 export const oneOf = (
-  key: string,
+  key: Key,
   validationFns: ValidationFn[],
 ): ValidationFn =>
   (obj) => {
@@ -59,8 +54,9 @@ export const oneOf = (
 
     // At least one fn matched the type (i.e. no `expected` error or an expected
     // error for a different key) but the value had errors
+    const skey = key.join('.');
     const matchType = errors
-      .find(es => es.every(e => !e.expected || e.key !== key));
+      .find(es => es.every(e => !e.expected || e.key.join('.') !== skey));
     if (matchType) return matchType;
 
     // No function managed to match the type
@@ -72,13 +68,13 @@ export const allOf = (validationFns: ValidationFn[]): ValidationFn =>
   obj => flatten(validationFns.map(fn => fn(obj)));
 
 // Fails with one error for each key in `obj` that is not present in `keys`.
-export const noExtraKeys = (baseKey: string, keys: string[]): ValidationFn =>
+export const noExtraKeys = (baseKey: Key, keys: string[]): ValidationFn =>
   obj =>
     difference(Object.keys(obj), keys)
-      .map(k => error(`${baseKey}.${k}`, 'Unexpected key'));
+      .map(k => error([...baseKey, k], 'Unexpected key'));
 
 export const valueIs = (
-  key: string,
+  key: Key,
   expectedValue: any,
   name: string,
 ): ValidationFn =>

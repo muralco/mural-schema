@@ -8,7 +8,12 @@ import {
   UnionAst,
   ValueAst,
 } from './ast';
-import { InvalidSchemaError, ValidationFn } from './types';
+import {
+  InvalidSchemaError,
+  Key,
+  ValidationError,
+  ValidationFn,
+} from './types';
 import {
   allOf,
   error,
@@ -17,7 +22,6 @@ import {
   isPlainObject,
   noExtraKeys,
   oneOf,
-  replaceKey,
   valueIs,
 } from './util';
 
@@ -40,10 +44,10 @@ const compileValue = <T>(ast: ValueAst<T>): ValidationFn =>
 function compileObject(ast: ObjectAst): ValidationFn {
   const fns: ValidationFn[] = ast.properties
       .map(p => ({ ...p, fn: compile(p.ast) }))
-      .map(p => (obj: any) => p.fn(obj[p.key]));
+      .map(p => (obj: any) => p.fn(obj[p.objectKey]));
 
   if (ast.strict) {
-    fns.push(noExtraKeys(ast.key, ast.properties.map(p => p.key)));
+    fns.push(noExtraKeys(ast.key, ast.properties.map(p => p.objectKey)));
   }
 
   const fn = allOf(fns);
@@ -54,13 +58,23 @@ function compileObject(ast: ObjectAst): ValidationFn {
       : [expected(ast.key, 'object')];
 }
 
+const addIndex = (key: Key, index: number) =>
+  (e: ValidationError): ValidationError => ({
+    ...e,
+    key: [
+      ...key,
+      index,
+      ...e.key.slice(key.length),
+    ],
+  });
+
 function compileArray(ast: ArrayAst): ValidationFn {
   const fn = compile(ast.item);
 
   return (obj) => {
     if (!Array.isArray(obj)) return [expected(ast.key, 'array')];
     const errors = obj.map(
-      (v, i) => fn(v).map(replaceKey(ast.key, `${ast.key}.${i}`)),
+      (v, i) => fn(v).map(addIndex(ast.key, i)),
     );
     return flatten(errors);
   };

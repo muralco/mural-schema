@@ -33,7 +33,7 @@ Scenario: error no matching type
 Scenario: error matching type with errors
   Given a schema [[{"n": "number"}, "number"]]
   When validating { "n": true }
-  Then the validation error is "Expected number" at [body.n]
+  Then the validation error is "Expected number" at [n]
 
 Scenario: success string
   Given a schema "number|string"
