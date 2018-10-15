@@ -23,4 +23,4 @@ Scenario: error invalid array type
 Scenario: error invalid array object type
   Given a schema [{ "a": "string" }]
   When validating [{ "a": 123 }]
-  Then the validation error is "Expected string" at [0.a]
+  Then the validation error is "Expected string" at [0, "a"]

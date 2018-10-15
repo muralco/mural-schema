@@ -1,10 +1,8 @@
-import * as assert from 'assert';
-import { Before, Given, Then, When } from 'cucumber';
-import { parseSchema } from './index';
+import pickledCucumber, { SetupFn } from 'pickled-cucumber';
+import * as S from './index';
+import toJsonSchema, { astToJsonSchema } from './to-jsonschema';
 
-let ctx: { [key: string]: any } = {};
-
-Before(() => { ctx = {}; });
+astToJsonSchema; // pin down this reference
 
 const parseJSON = (s: string) =>
   s === 'undefined'
@@ -13,45 +11,55 @@ const parseJSON = (s: string) =>
       ? new RegExp(s.substring(1, s.length - 1))
       : JSON.parse(s);
 
-const setSchema = (schema: string) => {
-  ctx.$schema = parseSchema(
-    parseJSON(schema),
-    {
-      customTypes: {
-        email: obj => typeof obj === 'string' && obj.includes('@'),
-        Person: {
-          age: 'number?',
-          first: 'string',
-          last: 'string',
-          middle: 'string?',
-        },
-      },
+const opts: S.ParseOptions = {
+  customTypes: {
+    email: obj => typeof obj === 'string' && obj.includes('@'),
+    Person: {
+      age: 'number?',
+      first: 'string',
+      last: 'string',
+      middle: 'string?',
     },
+  },
+};
+
+const setup: SetupFn = ({
+  compare, getCtx, Given, setCtx, Then, When,
+}) => {
+  Given(
+    'a schema',
+    schema => setCtx('$schema', S.parseSchema(
+      parseJSON(schema),
+      opts,
+    )),
+    { inline: true },
+  );
+  When(
+    'validating',
+    obj => setCtx('$errors', getCtx<S.ValidationFn>('$schema')(parseJSON(obj))),
+    { inline: true },
+  );
+  When(
+    'mapping to JSON schema',
+    obj => setCtx('$json', toJsonSchema(parseJSON(obj), opts)),
+    { inline: true },
+  );
+
+  Then(
+    'the validation passes',
+    () => compare('is', getCtx('$errors'), '[]'),
+  );
+  Then(
+    'the validation error is "(.*)"(?: at (\\[.*\\]))?',
+    (message, key) => compare('includes', getCtx('$errors'), JSON.stringify({
+      key: parseJSON(key || '[]'),
+      message,
+    })));
+  Then(
+    'the resulting schema {op}',
+    (op, expected) => compare(op, getCtx('$json'), expected),
+    { inline: true },
   );
 };
-const validateSchema = (obj: string) => {
-  ctx.$errors = ctx.$schema(parseJSON(obj));
-};
-const checkErrors = (expected: string) => {
-  assert.deepEqual(ctx.$errors, parseJSON(expected));
-};
 
-Given(/^a schema (.*)$/, setSchema);
-Given(/^a schema$/, setSchema);
-
-When(/^validating (.*)$/, validateSchema);
-When(/^validating$/, validateSchema);
-
-Then(/^the validation passes$/, () => checkErrors('[]'));
-Then(/^the validation error is "(.*)"(?: at \[(.*)\])?$/, (msg, key) => {
-  assert.strictEqual(ctx.$errors.length, 1, 'Expected a single error');
-  const error = ctx.$errors[0];
-  assert.strictEqual(error.message, msg);
-  if (key) assert.strictEqual(error.key.join('.'), key);
-});
-Then(/^the validation error is$/, (expected) => {
-  assert.strictEqual(ctx.$errors.length, 1, 'Expected a single error');
-  assert.deepEqual(ctx.$errors[0], parseJSON(expected));
-});
-Then(/^the validation fails with (.*)$/, checkErrors);
-Then(/^the validation fails with$/, checkErrors);
+pickledCucumber(setup);
