@@ -53,7 +53,13 @@ const printObjectProperty = (
 };
 
 const printObject = (ast: ObjectAst, options: PrintOptions): string =>
-  `{${!ast.strict ? '\n  $strict: false,' : ''}${ast.properties
+  `{${!ast.strict ? '\n  $strict: false,' : ''
+    }${
+    ast.extendsFrom
+      .map(e => `\n  ...${e},`)
+      .join('')
+    }${
+    ast.properties
       .map(p => `\n  ${printObjectProperty(p, options)},`)
     . join('')
     }\n}`;
@@ -102,8 +108,13 @@ const printAny = (ast: Ast, options: PrintOptions): string => {
 };
 
 export const print = (items: Ast[], options: PrintOptions) => `${
-  items.map(i => `const ${i.key} = ${printAny(i, options)};\n\n`).join('')
-  }module.exports = {${
-    items.map(i => i.key).sort().map(n => `\n  ${n},`).join('')
-  }\n};
-  `;
+  items.map(i => `${
+    options.useExport ? 'export ' : ''
+  }const ${i.key} = ${printAny(i, options)};\n\n`).join('')
+  }${
+    options.useExport
+     ? ''
+     : `module.exports = {${
+        items.map(i => i.key).sort().map(n => `\n  ${n},`).join('')
+        }\n};\n`
+  }`;

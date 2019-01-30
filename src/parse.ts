@@ -177,6 +177,7 @@ function parseObject(
     .filter(k => !OBJ_RESERVED.includes(k));
 
   return {
+    extendsFrom: [],
     key,
     properties: schemaKeys
       .map(k => parseMakeOptional(key, k, schemaObject[k], options)),

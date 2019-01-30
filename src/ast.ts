@@ -11,6 +11,7 @@ export interface ObjectPropertyAst extends BaseAst {
 
 export interface ObjectAst extends BaseAst {
   type: 'object';
+  extendsFrom: string[];
   properties: ObjectPropertyAst[];
   strict: boolean;
 }

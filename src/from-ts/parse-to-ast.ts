@@ -10,6 +10,9 @@ import {
   UnionAst,
   ValueAst,
 } from '../ast';
+import {
+  flatten,
+} from '../util';
 import { Options } from './types';
 
 const REGEX_STRING_TYPE = 'RegExString';
@@ -155,7 +158,15 @@ function generateObject(
 ): ObjectAst {
   const strict = !node.members.find(ts.isIndexSignatureDeclaration);
 
+  const extendsFrom = ts.isInterfaceDeclaration(node) && node.heritageClauses
+    ? flatten(node.heritageClauses.map(c => [...c.types]))
+      .map(t => t.expression)
+      .filter(t => ts.isIdentifier(t))
+      .map(t => getName(t as ts.Identifier))
+    : [];
+
   return {
+    extendsFrom,
     key: [],
     properties: node.members
       .filter(ts.isPropertySignature)

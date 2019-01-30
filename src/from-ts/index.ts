@@ -18,6 +18,7 @@ if (!fileNames.length) {
     -q      Generate quoted type references instead of direct references.
             When this is on, it will generate: \`{ person: 'Person' }\` instead
             of \`{ person: Person }\`
+    -e      Generate \`export const\` instead of \`module.exports\`.
   `);
 
   process.exit(-1);
@@ -25,6 +26,7 @@ if (!fileNames.length) {
 
 const options: PrintOptions = {
   quote: opts.some(o => o === '-q'),
+  useExport: opts.some(o => o === '-e'),
 };
 
 fileNames.forEach((fileName) => {

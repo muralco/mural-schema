@@ -49,4 +49,5 @@ export interface ParseOptions {
 
 export interface PrintOptions {
   quote?: boolean;
+  useExport?: boolean;
 }
