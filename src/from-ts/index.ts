@@ -38,6 +38,6 @@ fileNames.forEach((fileName) => {
 
   const items = parse(sourceFile, {});
 
-  console.log(`// This file was generated DO NOT EDIT!
-  \n${print(items, options)}`);
+  console.log(`// This file was generated DO NOT EDIT!\n${
+    print(items, options).trim()}\n`);
 });
