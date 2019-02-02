@@ -48,7 +48,7 @@ export const oneOf = (
   (obj) => {
     const errors = validationFns.map(fn => fn(obj));
 
-    // At least one fn matche the type and value
+    // At least one fn matches the type and value
     const ok = errors.find(es => es.length === 0);
     if (ok) return [];
 

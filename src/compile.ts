@@ -46,11 +46,11 @@ function compileObject(ast: ObjectAst): ValidationFn {
       .map(p => ({ ...p, fn: compile(p.ast) }))
       .map(p => (obj: any) => p.fn(obj[p.objectKey]));
 
-  if (ast.strict) {
-    fns.push(noExtraKeys(ast.key, ast.properties.map(p => p.objectKey)));
-  }
+  const allFns = ast.strict
+    ? [...fns, noExtraKeys(ast.key, ast.properties.map(p => p.objectKey))]
+    : fns;
 
-  const fn = allOf(fns);
+  const fn = allOf(allFns);
 
   return obj =>
     isPlainObject(obj)

@@ -10,9 +10,8 @@ import {
   UnionAst,
   ValueAst,
 } from '../ast';
-import {
-  flatten,
-} from '../util';
+import { makePartial } from '../parse';
+import { flatten } from '../util';
 import { Options } from './types';
 
 const REGEX_STRING_TYPE = 'RegExString';
@@ -40,16 +39,18 @@ function generateRegEx(node: ts.TypeReferenceNode): RegExpAst {
 
 const generateArray = (
   type: ts.ArrayTypeNode,
+  options: Options,
 ): ArrayAst => ({
-  item: generateType(type.elementType),
+  item: generateType(type.elementType, options),
   key: [],
   type: 'array',
 });
 
 const generateUnion = (
   node: ts.UnionTypeNode,
+  options: Options,
 ): UnionAst => ({
-  items: node.types.map(t => generateType(t)),
+  items: node.types.map(t => generateType(t, options)),
   key: [],
   type: 'union',
 });
@@ -99,12 +100,16 @@ const generateValue = <T>(name: string, value: T): ValueAst<T> => ({
 
 function generateType(
   type: ts.Node,
+  options: Options,
 ): Ast {
-  if (ts.isTypeLiteralNode(type)) return generateObject(type);
-  if (ts.isArrayTypeNode(type)) return generateArray(type);
-  if (ts.isUnionTypeNode(type)) return generateUnion(type);
+  if (ts.isTypeLiteralNode(type)) return generateObject(type, options);
+  if (ts.isArrayTypeNode(type)) return generateArray(type, options);
+  if (ts.isUnionTypeNode(type)) return generateUnion(type, options);
   if (ts.isTypeReferenceNode(type)) return generateTypeRef(type);
   if (ts.isLiteralTypeNode(type)) return generateLiteral(type);
+  if (ts.isIntersectionTypeNode(type)) {
+    return generateIntersectionObject(type, options);
+  }
 
   switch (type.kind) {
     case ts.SyntaxKind.StringKeyword:
@@ -131,11 +136,66 @@ function generateType(
   }
 }
 
+const generatePartial = (ast: Ast, recursive: boolean): Ast => {
+  if (ast.type === 'object') {
+    return makePartial(ast, recursive);
+  }
+  if (ast.type === 'function' && ast.fn === FN) {
+    return {
+      ...ast,
+      key: [
+        recursive
+          ? 'recursive-partial-ref'
+          : 'partial-ref',
+      ],
+    };
+  }
+  return ast;
+};
+
+const getPartialType = (node: ts.Node, options: Options) => {
+  if (!ts.isTypeReferenceNode(node) || !node.typeArguments) return undefined;
+
+  const refNode = node.typeArguments[0];
+  if (!refNode) return undefined;
+
+  const name = getName(node.typeName);
+
+  if (name === 'Partial') {
+    return {
+      recursive: false,
+      refNode,
+    };
+  }
+
+  if (options.recursivePartial && options.recursivePartial.includes(name)) {
+    return {
+      recursive: true,
+      refNode,
+    };
+  }
+
+  return undefined;
+};
+
 const generateAttributeValue = (
   node: ts.PropertySignature,
+  options: Options,
 ): Ast => {
   if (!node.type) throw `Invalid property value for ${node}`;
-  const ast = generateType(node.type);
+
+  const partial = getPartialType(node.type, options);
+
+  const valueNode = partial
+    ? partial.refNode
+    : node.type;
+
+  const valueAst = generateType(valueNode, options);
+
+  const ast = partial
+    ? generatePartial(valueAst, partial.recursive)
+    : valueAst;
+
   return !!node.questionToken
     ? {
       items: [ast, generateValue('undefined', undefined)],
@@ -147,14 +207,19 @@ const generateAttributeValue = (
 
 const generateAttribute = (
   node: ts.PropertySignature,
-): ObjectPropertyAst => ({
-  ast: generateAttributeValue(node),
-  key: [getName(node.name)],
-  objectKey: getName(node.name),
-});
+  options: Options,
+): ObjectPropertyAst => {
+  const name = getName(node.name);
+  return {
+    ast: generateAttributeValue(node, options),
+    key: [name],
+    objectKey: name,
+  };
+};
 
 function generateObject(
   node: ts.InterfaceDeclaration|ts.TypeLiteralNode,
+  options: Options,
 ): ObjectAst {
   const strict = !node.members.find(ts.isIndexSignatureDeclaration);
 
@@ -170,7 +235,38 @@ function generateObject(
     key: [],
     properties: node.members
       .filter(ts.isPropertySignature)
-      .map(m => generateAttribute(m)),
+      .map(m => generateAttribute(m, options)),
+    strict,
+    type: 'object',
+  };
+}
+
+function generateIntersectionObject(
+  node: ts.IntersectionTypeNode,
+  options: Options,
+): ObjectAst {
+  const refs = node.types
+    .filter(ts.isTypeReferenceNode)
+    .map(n => getName(n.typeName));
+
+  const objs = node.types
+    .filter(ts.isTypeLiteralNode)
+    .map(n => generateObject(n, options));
+
+  const strict = objs.every(o => o.strict);
+
+  const extendsFrom = [
+    ...refs,
+    ...flatten(objs.map(o => o.extendsFrom)),
+  ];
+  const properties = flatten(
+    objs.map(o => o.properties),
+  );
+
+  return {
+    extendsFrom,
+    key: [],
+    properties,
     strict,
     type: 'object',
   };
@@ -190,14 +286,14 @@ function generateTopLevelType(node: ts.Node, options: Options): Ast | null {
     if (ts.isFunctionTypeNode(node.type)) return null;
 
     return {
-      ...generateType(node.type),
+      ...generateType(node.type, options),
       key: [name],
     };
   }
   if (ts.isInterfaceDeclaration(node)) {
     const name = getName(node.name);
     return {
-      ...generateObject(node),
+      ...generateObject(node, options),
       key: [name],
     };
   }

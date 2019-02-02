@@ -19,8 +19,10 @@ const printArray = (ast: ArrayAst, options: PrintOptions): string =>
     ? `[${ast.item.items.map(i => printAny(i, options))}]`
     : `[${printAny(ast.item, options)}]`;
 
+const REFS = ['ref', 'partial-ref', 'recursive-partial-ref'];
+
 const printFunction = (ast: FunctionAst, options: PrintOptions): string =>
-  ast.key.join('.') === 'ref'
+  REFS.includes(ast.key.join('.'))
     ? options.quote
       ? `'${ast.name}'`
       : `${ast.name}`
@@ -34,10 +36,20 @@ const printLiteral = (ast: LiteralAst): string =>
 const isUndefined = (ast: Ast): boolean =>
   ast.type === 'value' && ast.value === undefined;
 
-const printObjectProperty = (
-  { ast, key }: ObjectPropertyAst,
-  options: PrintOptions,
-) => {
+const FN_SUFFIX: { [key: string]: string } = {
+  'partial-ref': '/',
+  'recursive-partial-ref': '//',
+  ref: '',
+};
+
+const getObjectKeySuffix = (ast: Ast): { suffix: string, valueAst: Ast } => {
+  if (ast.type === 'function') {
+    return {
+      suffix: FN_SUFFIX[ast.key.join('.')] || '',
+      valueAst: ast,
+    };
+  }
+
   if (
     ast.type === 'union'
     && ast.items.length === 2
@@ -45,11 +57,31 @@ const printObjectProperty = (
   ) {
     const other = ast.items.find(i => !isUndefined(i));
     if (other) {
-      return `'${key}?': ${padd(printAny(other, options))}`;
+      const { suffix, valueAst } = getObjectKeySuffix(other);
+      return {
+        suffix: `${suffix}?`,
+        valueAst,
+      };
     }
   }
 
-  return `${key}: ${padd(printAny(ast, options))}`;
+  return {
+    suffix: '',
+    valueAst: ast,
+  };
+};
+
+const printObjectProperty = (
+  { ast, key }: ObjectPropertyAst,
+  options: PrintOptions,
+) => {
+  const { suffix, valueAst } = getObjectKeySuffix(ast);
+
+  const k = suffix
+    ? `'${key}${suffix}'`
+    : key;
+
+  return `${k}: ${padd(printAny(valueAst, options))}`;
 };
 
 const printObject = (ast: ObjectAst, options: PrintOptions): string =>
@@ -68,7 +100,7 @@ const printRegExp = (ast: RegExpAst): string => ast.value.toString();
 
 const printUnion = (ast: UnionAst, options: PrintOptions): string => {
   const useString = ast.items.every(i =>
-    i.type === 'function' && (options.quote || i.key.join('.') !== 'ref')
+    i.type === 'function' && (options.quote || !REFS.includes(i.key.join('.')))
     || i.type === 'value'
     || i.type === 'literal',
   );

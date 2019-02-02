@@ -30,6 +30,7 @@ In the context of MURAL schema a _type_ can be any of the following:
 - a validation function
 - a custom _type_
 - optional _types_
+- partial and recursive partial _types_
 
 We'll talk about each of these in the next sections.
 
@@ -311,6 +312,57 @@ For example:
 [[{ name: 'string' }, undefined]]
 ```
 
+## Partial types
+
+> `{ 'key/': { a: 'string' } }`, `{ 'key//': { a: { b: 'string' } } }`
+
+Partial types are _types_ whose value must be a subset of an object. The partial
+key modifier `/` marks the value of that key as a shallow partial object. That
+is, the value can contain zero or more of the object properties. The recursive
+partial key modifier `//` applies the partial operator recursively to all
+descendant keys of type object.
+
+Note that if combined with the optional key modifier `?`, the partial modifier
+should always precede the optional modifier as in `/?` or `//?`.
+
+For example:
+```js
+// some partial object keys
+{
+  // see the `/` suffix in the key
+  'obj/': {
+    a: 'string',
+    b: 'string',
+  },
+}
+
+// accepts `{ obj: { a: '!' } }`
+
+{
+  // recursive partial, see the `//` suffix
+  'obj//': {
+    a: {
+      b: 'string',
+      c: 'string',
+    },
+    d: 'string',
+  },
+}
+
+// accepts `{ obj: { a: { b: '!' } } }`
+
+// partial optional
+{
+  // see the `/?` suffix in the key
+  'obj/?': {
+    a: 'string',
+    b: 'string',
+  },
+}
+
+// accepts `{}`, `{ obj: {} }`, etc.
+```
+
 ## EBNF
 
 Finally, if you enjoy formal violence, here is a _sort-of-EBNF_ summarizing most
@@ -320,7 +372,8 @@ of the above.
 Type         = Scalar | Array | Union | Function;
 Scalar       = Object | Simple;
 Object       = '{' , KeyValue , {',' , KeyValue} , '}';
-KeyValue     = string , ':' , Type;
+KeyValue     = Key , ':' , Type;
+Key          = string , { '/' , { '/' } }, { '?' }
 Simple       = string | RegExp | undefined | null;
 Array        = '[' , Type , {',' , Type} , ']';
 Union        = StringUnion | ArrayUnion;

@@ -1,8 +1,7 @@
 import { readFileSync } from 'fs';
-import * as ts from 'typescript';
-import { print } from '../print';
 import { PrintOptions } from '../types';
-import { parse } from './parse-to-ast';
+import fromTs, { DEFAULT_RECURSIVE_PARTIAL } from './process';
+import { Options } from './types';
 
 const args = process.argv.slice(2);
 
@@ -24,20 +23,19 @@ if (!fileNames.length) {
   process.exit(-1);
 }
 
-const options: PrintOptions = {
+const parseOptions: Options = {
+  recursivePartial: DEFAULT_RECURSIVE_PARTIAL,
+};
+
+const printOptions: PrintOptions = {
   quote: opts.some(o => o === '-q'),
   useExport: opts.some(o => o === '-e'),
 };
 
-fileNames.forEach((fileName) => {
-  const sourceFile = ts.createSourceFile(
-    fileName,
-    readFileSync(fileName).toString(),
-    ts.ScriptTarget.ES2015,
-  );
+const content = fileNames
+  .map(fileName => readFileSync(fileName).toString());
 
-  const items = parse(sourceFile, {});
-
-  console.log(`// This file was generated DO NOT EDIT!\n${
-    print(items, options).trim()}\n`);
-});
+console.log(
+  `// This file was generated DO NOT EDIT!\n${
+  fromTs(content, parseOptions, printOptions).trim()}\n`,
+);

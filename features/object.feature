@@ -50,6 +50,8 @@ Scenario: error nested
   When validating { "key": { "n": true } }
   Then the validation error is "Expected number" at ["key", "n"]
 
+# === Optional =============================================================== #
+
 Scenario: success optional key not present
   Given a schema { "key?": "number" }
   When validating {}
@@ -60,7 +62,168 @@ Scenario: success optional key present
   When validating { "key": 1 }
   Then the validation passes
 
-Scenario: success optional key wrong type
+Scenario: error optional key wrong type
   Given a schema { "key?": "number" }
   When validating { "key": "one" }
   Then the validation error is "Expected number, undefined" at ["key"]
+
+# === Partial ================================================================ #
+
+Scenario: success partial key present
+  Given a schema { "key/": { "a": "string", "b": "string" } }
+  When validating { "key": { "a": "hey" } }
+  Then the validation passes
+
+Scenario: success partial empty
+  Given a schema { "key/": { "a": "string", "b": "string" } }
+  When validating { "key": {} }
+  Then the validation passes
+
+Scenario: error partial key wrong type
+  Given a schema { "key/": { "a": "string", "b": "string" } }
+  When validating { "key": { "a": 1 } }
+  Then the validation error is "Expected string, undefined" at ["key", "a"]
+
+# === Recursive partial ====================================================== #
+
+Scenario: success recursive partial key present
+  Given a schema
+    """
+    {
+      "key//": {
+        "a": {
+          "b": "string",
+          "c": "string"
+        },
+        "d": "string"
+      }
+    }
+    """
+  When validating { "key": { "a": { "b": "hey"} } }
+  Then the validation passes
+
+Scenario: success recursive partial empty
+  Given a schema
+    """
+    {
+      "key//": {
+        "a": {
+          "b": "string",
+          "c": "string"
+        },
+        "d": "string"
+      }
+    }
+    """
+  When validating { "key": {} }
+  Then the validation passes
+
+Scenario: error recursive partial key wrong type
+  Given a schema
+    """
+    {
+      "key//": {
+        "a": {
+          "b": "string",
+          "c": "string"
+        },
+        "d": "string"
+      }
+    }
+    """
+  When validating { "key": { "a": { "b": 1 } } }
+  Then the validation error is "Expected string, undefined" at ["key", "a", "b"]
+
+# === Optional partial ======================================================= #
+
+Scenario: success partial optional key present
+  Given a schema { "key/?": { "a": "string", "b": "string" } }
+  When validating { "key": { "a": "hey" } }
+  Then the validation passes
+
+Scenario: success partial optional key empty
+  Given a schema { "key/?": { "a": "string", "b": "string" } }
+  When validating { "key": {} }
+  Then the validation passes
+
+Scenario: success partial optional empty
+  Given a schema { "key/?": { "a": "string", "b": "string" } }
+  When validating {}
+  Then the validation passes
+
+Scenario: error partial optional key wrong type
+  Given a schema { "key/?": { "a": "string", "b": "string" } }
+  When validating { "key": { "a": 1 } }
+  Then the validation error is "Expected string, undefined" at ["key", "a"]
+
+# === Optional recursive partial ============================================= #
+
+Scenario: success optional recursive partial key present
+  Given a schema
+    """
+    {
+      "key//?": {
+        "a": {
+          "b": "string",
+          "c": "string"
+        },
+        "d": "string"
+      }
+    }
+    """
+  When validating { "key": { "a": { "b": "hey"} } }
+  Then the validation passes
+
+Scenario: success optional recursive partial empty key
+  Given a schema
+    """
+    {
+      "key//?": {
+        "a": {
+          "b": "string",
+          "c": "string"
+        },
+        "d": "string"
+      }
+    }
+    """
+  When validating { "key": {} }
+  Then the validation passes
+
+Scenario: success optional recursive partial empty
+  Given a schema
+    """
+    {
+      "key//?": {
+        "a": {
+          "b": "string",
+          "c": "string"
+        },
+        "d": "string"
+      }
+    }
+    """
+  When validating {}
+  Then the validation passes
+
+Scenario: error optional recursive partial key wrong type
+  Given a schema
+    """
+    {
+      "key//?": {
+        "a": {
+          "b": "string",
+          "c": "string"
+        },
+        "d": "string"
+      }
+    }
+    """
+  When validating { "key": { "a": { "b": 1 } } }
+  Then the validation error is "Expected string, undefined" at ["key", "a", "b"]
+
+Scenario: error optional partial invalid modifier order
+  Given a schema { "key?/": { "a": "string" } }
+  # Note that the suffix above is wrong, it should be `/?`!
+  When validating {}
+  Then the validation error is "Expected object" at ["key?/"]

@@ -92,6 +92,24 @@ const makeOptional = (
   type: 'union',
 });
 
+export const makePartial = (
+  ast: ObjectAst,
+  recursive: boolean,
+): ObjectAst => {
+  return {
+    ...ast,
+    properties: ast.properties.map(p => ({
+      ...p,
+      ast: makeOptional(
+        p.key,
+        recursive && p.ast.type === 'object'
+          ? makePartial(p.ast, true)
+          : p.ast,
+      ),
+    })),
+  };
+};
+
 const startsAndEndsWith = (s: string, delim: string): boolean =>
   s.startsWith(delim) && s.endsWith(delim);
 
@@ -129,7 +147,7 @@ function parseTypeName(
 
   const custom = (options.customTypes || {})[schema] || builtIns[schema];
   if (!custom) {
-    throw new InvalidSchemaError(`Unknown type for ${key}: ${schema}`);
+    throw new InvalidSchemaError(`Unknown type for \`${key}\`: ${schema}`);
   }
 
   const ast = (typeof custom !== 'function')
@@ -144,20 +162,35 @@ function parseTypeName(
 // === Object types ========================================================= //
 const OBJ_RESERVED = ['$strict'];
 
+const getKeyMods = (key: string) => {
+  const [actualKey, isPartial, isOptional] =
+    (key.match(/([^\/?]*)(\/\/?)?(\?)?$/) || []).slice(1);
+  return { actualKey: actualKey || key, isOptional, isPartial };
+};
+
 function parseMakeOptional(
   parentKey: Key,
   key: string,
   schema: Type,
   options: ParseOptions,
 ): ObjectPropertyAst {
-  const isOptional = key.endsWith('?');
-  const actualKey = isOptional
-    ? key.substring(0, key.length - 1)
-    : key;
+  const { actualKey, isOptional, isPartial } = getKeyMods(key);
 
   const fullKey = [...parentKey, actualKey];
 
-  const ast = parse(fullKey, schema, options);
+  let ast = parse(fullKey, schema, options);
+
+  if (isPartial) {
+    if (ast.type !== 'object') {
+      throw new InvalidSchemaError(
+        `Partial key modifiers can only be used with object values. Key \`${
+          fullKey
+        }\` maps to a value of type \`${schema}\` (AST=${ast.type})`,
+      );
+    }
+    ast = makePartial(ast, isPartial === '//');
+  }
+
   return {
     ast: isOptional
       ? makeOptional(fullKey, ast)

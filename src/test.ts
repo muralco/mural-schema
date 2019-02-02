@@ -1,4 +1,6 @@
+import { fail } from 'assert';
 import pickledCucumber, { SetupFn } from 'pickled-cucumber';
+import fromTs from './from-ts/process';
 import * as S from './index';
 import toJsonSchema, { astToJsonSchema } from './to-jsonschema';
 
@@ -26,12 +28,23 @@ const opts: S.ParseOptions = {
 const setup: SetupFn = ({
   compare, getCtx, Given, setCtx, Then, When,
 }) => {
+  const appendCtx = <T>(k: string, v: T) => {
+    const vs = getCtx<T[]>(k) || [];
+    vs.push(v);
+    setCtx(k, vs);
+  };
+
   Given(
     'a schema',
     schema => setCtx('$schema', S.parseSchema(
       parseJSON(schema),
       opts,
     )),
+    { inline: true },
+  );
+  Given(
+    'a TS file with',
+    content => appendCtx('$ts', content),
     { inline: true },
   );
   When(
@@ -42,6 +55,31 @@ const setup: SetupFn = ({
   When(
     'mapping to JSON schema',
     obj => setCtx('$json', toJsonSchema(parseJSON(obj), opts)),
+    { inline: true },
+  );
+  When(
+    'generating the schema from (?:that|those) files?( with exports)?',
+    withExports => setCtx(
+      '$schema-file',
+      fromTs(
+        getCtx<string[]>('$ts'),
+        { recursivePartial: ['PartialPartial'] },
+        { useExport: !!withExports },
+      ),
+    ),
+  );
+  When(
+    'compiling the invalid schema',
+    (schema) => {
+      const json = parseJSON(schema);
+      try {
+        S.parseSchema(json);
+      } catch (e) {
+        setCtx('$error', e);
+        return;
+      }
+      fail('The "invalid" schema is actually valid!');
+    },
     { inline: true },
   );
 
@@ -58,6 +96,28 @@ const setup: SetupFn = ({
   Then(
     'the resulting schema {op}',
     (op, expected) => compare(op, getCtx('$json'), expected),
+    { inline: true },
+  );
+  Then(
+    'the generated schema {op}',
+    (op, expected) => compare(
+      op,
+      getCtx('$schema-file'),
+      `"${expected
+          .replace(/\\/g, '\\\\')
+          .replace(/\n/g, '\\n')
+          .replace(/"/g, '\\"')
+      }"`,
+    ),
+    { inline: true },
+  );
+  Then(
+    'the compilation error {op}',
+    (op, expected) => compare(
+      op,
+      getCtx('$error'),
+      expected,
+    ),
     { inline: true },
   );
 };

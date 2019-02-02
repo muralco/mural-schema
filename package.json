@@ -1,6 +1,6 @@
 {
   "name": "mural-schema",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A JSON validation library using pure JSON schemas",
   "main": "index.js",
   "types": "index.d.ts",
