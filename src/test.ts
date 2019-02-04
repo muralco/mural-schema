@@ -123,3 +123,33 @@ const setup: SetupFn = ({
 };
 
 pickledCucumber(setup);
+
+// === Compile-time assertions ============================================== //
+const staticAssert = (_: S.Type) => {};
+// literals
+staticAssert(1);
+staticAssert(true);
+staticAssert(null);
+staticAssert(undefined);
+
+// named types and string literals
+staticAssert('some type name');
+
+// arrays
+staticAssert([1]);
+staticAssert(['string']);
+
+// regexp
+staticAssert(/a/);
+
+// objects
+staticAssert({});
+staticAssert({ a: false });
+
+// unions
+staticAssert([[1, 'a']]);
+staticAssert([['a', ['a']]]);
+
+// functions
+staticAssert(() => true);
+staticAssert(() => []);

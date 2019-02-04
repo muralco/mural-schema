@@ -14,7 +14,7 @@ type SimpleType =
 
 type ScalarType = ObjectType | SimpleType;
 export type ArrayType = ScalarType[];
-export type UnionType = ScalarType[][];
+export type UnionType = (ScalarType|ArrayType)[][];
 
 export type ValidationFn = (obj: any) => ValidationError[];
 
