@@ -1,6 +1,6 @@
 {
   "name": "mural-schema",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "A JSON validation library using pure JSON schemas",
   "main": "index.js",
   "types": "index.d.ts",
@@ -18,7 +18,7 @@
     "@types/cucumber": "^4.0.4",
     "@types/node": "^10.5.2",
     "cucumber": "^4.2.1",
-    "pickled-cucumber": "^1.0.6",
+    "pickled-cucumber": "^2.0.2",
     "ts-node": "^7.0.1",
     "ts-unused-exports": "^2.0.10",
     "tslint": "^5.11.0",
