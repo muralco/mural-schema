@@ -43,6 +43,16 @@ const FN_SUFFIX: { [key: string]: string } = {
 };
 
 const getObjectKeySuffix = (ast: Ast): { suffix: string, valueAst: Ast } => {
+  if (ast.type === 'object'
+    && ast.properties.length === 1
+    && ast.properties[0].objectKey === '$keyof'
+  ) {
+    return {
+      suffix: ':keyof',
+      valueAst: ast.properties[0].ast,
+    };
+  }
+
   if (ast.type === 'function') {
     return {
       suffix: FN_SUFFIX[ast.key.join('.')] || '',

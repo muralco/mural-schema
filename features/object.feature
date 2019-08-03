@@ -226,4 +226,58 @@ Scenario: error optional partial invalid modifier order
   Given a schema { "key?/": { "a": "string" } }
   # Note that the suffix above is wrong, it should be `/?`!
   When validating {}
-  Then the validation error is "Expected object" at ["key?/"]
+  Then the validation error is "Expected object" at ["key?"]
+
+# === Keyof ================================================================== #
+
+Scenario: success keyof key present
+  Given a schema { "key:keyof": { "a": "string", "b": "string" } }
+  When validating { "key": "a" }
+  Then the validation passes
+
+Scenario: error keyof key wrong value
+  Given a schema { "key:keyof": { "a": "string", "b": "string" } }
+  When validating { "key": "c" }
+  Then the validation error is "Expected 'a', 'b'" at ["key"]
+
+Scenario: error keyof key wrong type
+  Given a schema { "key:keyof": { "a": "string", "b": "string" } }
+  When validating { "key": 1 }
+  Then the validation error is "Expected 'a', 'b'" at ["key"]
+
+# === $keyof ================================================================= #
+
+Scenario: success $keyof key present
+  Given a schema { "$keyof": { "a": "string", "b": "string" } }
+  When validating "a"
+  Then the validation passes
+
+Scenario: error $keyof key wrong value
+  Given a schema { "$keyof": { "a": "string", "b": "string" } }
+  When validating "c"
+  Then the validation error is "Expected 'a', 'b'"
+
+Scenario: error keyof key wrong type
+  Given a schema { "$keyof": { "a": "string", "b": "string" } }
+  When validating 1
+  Then the validation error is "Expected 'a', 'b'"
+
+Scenario: success $keyof array key present
+  Given a schema [{ "$keyof": { "a": "string", "b": "string" } }]
+  When validating ["a"]
+  Then the validation passes
+
+Scenario: success $keyof array empty
+  Given a schema [{ "$keyof": { "a": "string", "b": "string" } }]
+  When validating []
+  Then the validation passes
+
+Scenario: error $keyof key wrong value
+  Given a schema [{ "$keyof": { "a": "string", "b": "string" } }]
+  When validating ["c"]
+  Then the validation error is "Expected 'a', 'b'" at [0]
+
+Scenario: error keyof key wrong type
+  Given a schema [{ "$keyof": { "a": "string", "b": "string" } }]
+  When validating "a"
+  Then the validation error is "Expected array"

@@ -110,6 +110,16 @@ export const makePartial = (
   };
 };
 
+const makeKeyof = (ast: ObjectAst): UnionAst => ({
+  items: ast.properties.map((p: ObjectPropertyAst): LiteralAst => ({
+    key: ast.key,
+    type: 'literal',
+    value: p.objectKey,
+  })),
+  key: ast.key,
+  type: 'union',
+});
+
 const startsAndEndsWith = (s: string, delim: string): boolean =>
   s.startsWith(delim) && s.endsWith(delim);
 
@@ -162,11 +172,31 @@ function parseTypeName(
 // === Object types ========================================================= //
 const OBJ_RESERVED = ['$strict'];
 
+const KEY_MODS = [
+  ':keyof', // keyof
+  '//?', // partial (/) and recursive partial (//),
+  '\\?', // optional
+];
+
+const KEY_REGEX = new RegExp(`${KEY_MODS.map(v => `(${v})?`).join('')}$`);
+
 const getKeyMods = (key: string) => {
-  const [actualKey, isPartial, isOptional] =
-    (key.match(/([^\/?]*)(\/\/?)?(\?)?$/) || []).slice(1);
-  return { actualKey: actualKey || key, isOptional, isPartial };
+  const [isKeyOf, isPartial, isOptional] =
+    (key.match(KEY_REGEX) || []).slice(1);
+  const actualKey = key.replace(KEY_REGEX, '');
+  return { actualKey: actualKey || key, isOptional, isPartial, isKeyOf };
 };
+
+const notAnObject = (
+  modifier: string,
+  fullKey: (string|number)[],
+  schema: Type,
+  type: string,
+) => new InvalidSchemaError(
+  `${modifier} key modifiers can only be used with object values. Key \`${
+    fullKey
+  }\` maps to a value of type \`${schema}\` (AST=${type})`,
+);
 
 function parseMakeOptional(
   parentKey: Key,
@@ -174,7 +204,7 @@ function parseMakeOptional(
   schema: Type,
   options: ParseOptions,
 ): ObjectPropertyAst {
-  const { actualKey, isOptional, isPartial } = getKeyMods(key);
+  const { actualKey, isKeyOf, isOptional, isPartial } = getKeyMods(key);
 
   const fullKey = [...parentKey, actualKey];
 
@@ -182,13 +212,16 @@ function parseMakeOptional(
 
   if (isPartial) {
     if (ast.type !== 'object') {
-      throw new InvalidSchemaError(
-        `Partial key modifiers can only be used with object values. Key \`${
-          fullKey
-        }\` maps to a value of type \`${schema}\` (AST=${ast.type})`,
-      );
+      throw notAnObject('Partial', fullKey, schema, ast.type);
     }
     ast = makePartial(ast, isPartial === '//');
+  }
+
+  if (isKeyOf) {
+    if (ast.type !== 'object') {
+      throw notAnObject('Keyof', fullKey, schema, ast.type);
+    }
+    ast = makeKeyof(ast);
   }
 
   return {
@@ -200,14 +233,30 @@ function parseMakeOptional(
   };
 }
 
+const OBJ_OPERATORS: { [key: string]: typeof parse } = {
+  $keyof: (key, schema, options) => {
+    const ast = parse(key, schema, options);
+    if (ast.type !== 'object') {
+      throw notAnObject('Keyof', key, schema, ast.type);
+    }
+
+    return makeKeyof(ast);
+  },
+};
+
 function parseObject(
   key: Key,
   schemaObject: ObjectType,
   options: ParseOptions,
-): ObjectAst {
+): Ast {
   const schemaKeys = Object
     .keys(schemaObject)
     .filter(k => !OBJ_RESERVED.includes(k));
+
+  if (schemaKeys.length === 1) {
+    const op = OBJ_OPERATORS[schemaKeys[0]];
+    if (op) return op(key, schemaObject[schemaKeys[0]], options);
+  }
 
   return {
     extendsFrom: [],

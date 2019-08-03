@@ -31,6 +31,7 @@ In the context of MURAL schema a _type_ can be any of the following:
 - a custom _type_
 - optional _types_
 - partial and recursive partial _types_
+- _keyof types_
 
 We'll talk about each of these in the next sections.
 
@@ -363,6 +364,75 @@ For example:
 // accepts `{}`, `{ obj: {} }`, etc.
 ```
 
+## Keyof types
+
+> `{ 'key:keyof': { a: 'string' } }`, `{ $keyof: { a: 'string' } }`
+
+_Keyof_ types are _types_ whose value must be the name of an object property.
+
+Lets say we have an object type `A` that defines properties `a` and `b` (their
+types are not relevant to this description). The type of the key _names_ of `A`
+would be `'"a" | "b"'`. If we wanted a type `KA` that represents the name of a
+key of `A` we could just write:
+
+```js
+const KA = '"a"|"b"';
+```
+
+...but if we later add a new key to `A` that `KA` would be out of sync. In order
+to avoid all this trouble, you could just write:
+
+```js
+const KA = { $keyof: A };
+```
+
+If you are putting this _keyof_ as the value of an object's property, that is:
+
+```js
+const SomeObject = {
+  aKeyOfA: { $keyof: A },
+};
+```
+
+...you could also opt for using the `:keyof` suffix like this:
+
+
+```js
+const SomeObject = {
+  'aKeyOfA:keyof': A,
+};
+```
+
+For example:
+```js
+const A = { a: 'string', b: 'string' };
+
+const KA = { $keyof: A }; // accepts `'a'` and  `'b'`, rejects everything else
+
+// Note that the following are equivalent
+const SomeObject1 = {
+  'aKeyOfA:keyof': A,
+};
+
+const SomeObject2 = {
+  aKeyOfA: { $keyof: A },
+};
+
+const SomeObject3 = {
+  aKeyOfA: '"a"|"b"',
+}
+
+// they all accept `{ aKeyOfA: 'a' }` and  `{ aKeyOfA: 'b' }`
+// and reject everything else
+
+// A more contrived example
+
+const ArrayOfKeysOfA = [{ $keyof: A }]; // a list of keys of A
+
+// accepts `[]`, `['a']`, `['b']`, `['a', 'b']`, `['a','a','a']`, etc.
+// rejects `['c']`
+```
+
 ## EBNF
 
 Finally, if you enjoy formal violence, here is a _sort-of-EBNF_ summarizing most
@@ -373,7 +443,7 @@ Type         = Scalar | Array | Union | Function;
 Scalar       = Object | Simple;
 Object       = '{' , KeyValue , {',' , KeyValue} , '}';
 KeyValue     = Key , ':' , Type;
-Key          = string , { '/' , { '/' } }, { '?' }
+Key          = string , { ':keyof' } , { '/' , { '/' } }, { '?' }
 Simple       = string | RegExp | undefined | null;
 Array        = '[' , Type , {',' , Type} , ']';
 Union        = StringUnion | ArrayUnion;

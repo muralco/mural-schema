@@ -57,6 +57,13 @@ const generateUnion = (
 
 const FN = () => [];
 
+const createTypeRef = (name: string): Ast => ({
+  fn: FN,
+  key: ['ref'],
+  name,
+  type: 'function',
+});
+
 const generateTypeRef = (
   node: ts.TypeReferenceNode,
 ): Ast => {
@@ -64,13 +71,20 @@ const generateTypeRef = (
   const isRegExp = name === REGEX_STRING_TYPE;
   if (isRegExp) return generateRegEx(node);
 
-  return {
-    fn: FN,
-    key: ['ref'],
-    name,
-    type: 'function',
-  };
+  return createTypeRef(name);
 };
+
+const generateKeyOf = (node: ts.TypeReferenceNode): ObjectAst => ({
+  extendsFrom: [],
+  key: [],
+  properties: [{
+    ast: createTypeRef(getName(node.typeName)),
+    key: ['$keyof'],
+    objectKey: '$keyof',
+  }],
+  strict: true,
+  type: 'object',
+});
 
 const generateBuiltIn = (s: string): FunctionAst => ({
   fn: FN,
@@ -110,6 +124,15 @@ function generateType(
   if (ts.isIntersectionTypeNode(type)) {
     return generateIntersectionObject(type, options);
   }
+  if (ts.isTypeOperatorNode(type)
+    && type.operator === ts.SyntaxKind.KeyOfKeyword
+    && ts.isTypeReferenceNode(type.type)
+  ) {
+    return generateKeyOf(type.type);
+  }
+  if (ts.isParenthesizedTypeNode(type)) {
+    return generateType(type.type, options);
+  }
 
   switch (type.kind) {
     case ts.SyntaxKind.StringKeyword:
@@ -120,6 +143,7 @@ function generateType(
     case ts.SyntaxKind.BooleanKeyword:
       return generateBuiltIn('boolean');
     case ts.SyntaxKind.AnyKeyword:
+    case ts.SyntaxKind.UnknownKeyword:
       return generateBuiltIn('any');
     case ts.SyntaxKind.NullKeyword:
       return generateValue('null', null);
