@@ -295,3 +295,14 @@ Scenario: Keyof parenthesis array
       }],
     };
     """
+
+Scenario: Number union
+  Given a TS file with
+    """
+    type A = 1 | 2;
+    """
+  When generating the schema from that file with exports
+  Then the generated schema is
+    """
+    export const A = '1|2';
+    """

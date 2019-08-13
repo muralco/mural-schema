@@ -123,6 +123,27 @@ const makeKeyof = (ast: ObjectAst): UnionAst => ({
 const startsAndEndsWith = (s: string, delim: string): boolean =>
   s.startsWith(delim) && s.endsWith(delim);
 
+function parseStringifiedType(
+  key: Key,
+  schema: string,
+  options: ParseOptions,
+): Ast | undefined {
+  if (schema === 'true' || schema === 'false') {
+    return parse(key, schema === 'true', options);
+  }
+  if (schema === 'undefined') {
+    return parse(key, undefined, options);
+  }
+  if (schema === 'null') {
+    return parse(key, null, options);
+  }
+  const asNumber = Number(schema);
+  if (!Number.isNaN(asNumber)) {
+    return parse(key, asNumber, options);
+  }
+  return undefined;
+}
+
 function parseTypeName(
   key: Key,
   schemaString: string,
@@ -154,6 +175,9 @@ function parseTypeName(
       value: schema.substring(1, schema.length - 1),
     };
   }
+
+  const builtInAst = parseStringifiedType(key, schema, options);
+  if (builtInAst) return builtInAst;
 
   const custom = (options.customTypes || {})[schema] || builtIns[schema];
   if (!custom) {
