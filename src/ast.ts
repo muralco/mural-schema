@@ -5,6 +5,7 @@ interface BaseAst {
 }
 
 export interface ObjectPropertyAst extends BaseAst {
+  anyKey: boolean;
   ast: Ast;
   objectKey: string;
 }
@@ -49,7 +50,7 @@ export interface LiteralAst extends BaseAst {
 }
 
 export type Ast =
-  ArrayAst
+  | ArrayAst
   | FunctionAst
   | LiteralAst
   | ObjectAst

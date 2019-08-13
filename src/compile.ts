@@ -4,6 +4,7 @@ import {
   FunctionAst,
   LiteralAst,
   ObjectAst,
+  ObjectPropertyAst,
   RegExpAst,
   UnionAst,
   ValueAst,
@@ -41,16 +42,39 @@ const compileFunction = (ast: FunctionAst): ValidationFn => ast.fn;
 const compileValue = <T>(ast: ValueAst<T>): ValidationFn =>
   valueIs(ast.key, ast.value, ast.name);
 
+function compileObjectWithAnyProp(prop: ObjectPropertyAst): ValidationFn {
+  const anyFn = compile(prop.ast);
+
+  return (obj: any) => flatten(
+    Object
+      .keys(obj)
+      .map(p => anyFn(obj[p]).map(error => ({
+        ...error,
+        // error.key is ['$any', 'a', 'b'] and we need to replace `$any` with
+        // the actual property name (p). For example { x: { a: { b: 1 } } }
+        // should error with ['x', 'a', 'b']
+        key: [p, ...error.key.slice(1)],
+      }))),
+  );
+}
+
 function compileObject(ast: ObjectAst): ValidationFn {
+  const anyProp = ast.properties.find(p => p.anyKey);
+
   const fns: ValidationFn[] = ast.properties
-      .map(p => ({ ...p, fn: compile(p.ast) }))
-      .map(p => (obj: any) => p.fn(obj[p.objectKey]));
+    .filter(p => p !== anyProp)
+    .map(p => ({ ...p, fn: compile(p.ast) }))
+    .map(p => (obj: any) => p.fn(obj[p.objectKey]));
 
   const allFns = ast.strict
     ? [...fns, noExtraKeys(ast.key, ast.properties.map(p => p.objectKey))]
     : fns;
 
-  const fn = allOf(allFns);
+  const allFnsWithAny = anyProp
+    ? [...allFns, compileObjectWithAnyProp(anyProp)]
+    : allFns;
+
+  const fn = allOf(allFnsWithAny);
 
   return obj =>
     isPlainObject(obj)

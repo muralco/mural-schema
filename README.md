@@ -113,7 +113,7 @@ For example:
 
 ## Objects
 
-> `{ key1: Type, key2: Type, ..., [$strict: false] }`
+> `{ key1: Type, key2: Type, ..., [$strict: false], $any: Type }`
 
 A schema type can be an object with arbitrary keys and _types_ in the values.
 
@@ -123,6 +123,11 @@ by nesting object schemas.
 > Note: the special key/value `$strict: false` can be specified in object
 schemas to allow extra keys to be present in the input object. By default the
 input object cannot have any unknown key.
+
+Sometimes an object type has random key names but a specific known value for
+each key. This scenario can be modelled using the `$any` key name which
+matches any key in the object and asserts the value of _every_ key in the
+object.
 
 For example:
 ```js
@@ -137,6 +142,13 @@ For example:
 
 // an object with a `child` object containing a number in `a`
 { child: { a: 'number' } }
+
+// an dictionary object where keys can be string but their values must be
+// numbers
+{ $any: 'number' }
+
+// idem, but this time, the values are persons
+{ $any: { firstName: 'string', lastName: 'string' }
 ```
 
 ## Arrays
@@ -443,7 +455,7 @@ Type         = Scalar | Array | Union | Function;
 Scalar       = Object | Simple;
 Object       = '{' , KeyValue , {',' , KeyValue} , '}';
 KeyValue     = Key , ':' , Type;
-Key          = string , { ':keyof' } , { '/' , { '/' } }, { '?' }
+Key          = string , { ':keyof' } , { '/' , { '/' } }, { '?' } | '$any'
 Simple       = string | RegExp | undefined | null;
 Array        = '[' , Type , {',' , Type} , ']';
 Union        = StringUnion | ArrayUnion;

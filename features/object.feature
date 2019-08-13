@@ -281,3 +281,35 @@ Scenario: error keyof key wrong type
   Given a schema [{ "$keyof": { "a": "string", "b": "string" } }]
   When validating "a"
   Then the validation error is "Expected array"
+
+# === $any =================================================================== #
+
+Scenario: success $any
+  Given a schema { "$any": "string" }
+  When validating { "a": "message" }
+  Then the validation passes
+
+Scenario: success $any (empty)
+  Given a schema { "$any": "string" }
+  When validating {}
+  Then the validation passes
+
+Scenario: error $any
+  Given a schema { "$any": "string" }
+  When validating { "a": 1 }
+  Then the validation error is "Expected string" at ["a"]
+
+Scenario: success nested $any
+  Given a schema { "$any": { "a": "string" } }
+  When validating { "x": { "a": "message" } }
+  Then the validation passes
+
+Scenario: success nested $any (empty)
+  Given a schema { "$any": { "a": "string" } }
+  When validating {}
+  Then the validation passes
+
+Scenario: error nested $any
+  Given a schema { "$any": { "a": "string" } }
+  When validating { "x": { "a": 1 } }
+  Then the validation error is "Expected string" at ["x", "a"]

@@ -78,6 +78,7 @@ const generateKeyOf = (node: ts.TypeReferenceNode): ObjectAst => ({
   extendsFrom: [],
   key: [],
   properties: [{
+    anyKey: false,
     ast: createTypeRef(getName(node.typeName)),
     key: ['$keyof'],
     objectKey: '$keyof',
@@ -203,7 +204,7 @@ const getPartialType = (node: ts.Node, options: Options) => {
 };
 
 const generateAttributeValue = (
-  node: ts.PropertySignature,
+  node: ts.PropertySignature | ts.IndexSignatureDeclaration,
   options: Options,
 ): Ast => {
   if (!node.type) throw `Invalid property value for ${node}`;
@@ -235,6 +236,20 @@ const generateAttribute = (
 ): ObjectPropertyAst => {
   const name = getName(node.name);
   return {
+    anyKey: false,
+    ast: generateAttributeValue(node, options),
+    key: [name],
+    objectKey: name,
+  };
+};
+
+const generateAnyKeyAttribute = (
+  node: ts.IndexSignatureDeclaration,
+  options: Options,
+): ObjectPropertyAst => {
+  const name = '$any';
+  return {
+    anyKey: true,
     ast: generateAttributeValue(node, options),
     key: [name],
     objectKey: name,
@@ -245,7 +260,7 @@ function generateObject(
   node: ts.InterfaceDeclaration|ts.TypeLiteralNode,
   options: Options,
 ): ObjectAst {
-  const strict = !node.members.find(ts.isIndexSignatureDeclaration);
+  const indexDeclaration = node.members.find(ts.isIndexSignatureDeclaration);
 
   const extendsFrom = ts.isInterfaceDeclaration(node) && node.heritageClauses
     ? flatten(node.heritageClauses.map(c => [...c.types]))
@@ -254,13 +269,19 @@ function generateObject(
       .map(t => getName(t as ts.Identifier))
     : [];
 
+  const regularProperties = node.members
+    .filter(ts.isPropertySignature)
+    .map(m => generateAttribute(m, options));
+
+  const properties = indexDeclaration
+    ? [...regularProperties, generateAnyKeyAttribute(indexDeclaration, options)]
+    : regularProperties;
+
   return {
     extendsFrom,
     key: [],
-    properties: node.members
-      .filter(ts.isPropertySignature)
-      .map(m => generateAttribute(m, options)),
-    strict,
+    properties,
+    strict: true,
     type: 'object',
   };
 }

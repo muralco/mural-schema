@@ -306,3 +306,16 @@ Scenario: Number union
     """
     export const A = '1|2';
     """
+
+Scenario: Generic dictionary
+  Given a TS file with
+    """
+    type A = { [id: string]: string };
+    """
+  When generating the schema from that file with exports
+  Then the generated schema is
+    """
+    export const A = {
+      $any: 'string',
+    };
+    """

@@ -222,7 +222,7 @@ const notAnObject = (
   }\` maps to a value of type \`${schema}\` (AST=${type})`,
 );
 
-function parseMakeOptional(
+function parseObjectProperty(
   parentKey: Key,
   key: string,
   schema: Type,
@@ -249,6 +249,7 @@ function parseMakeOptional(
   }
 
   return {
+    anyKey: key === '$any',
     ast: isOptional
       ? makeOptional(fullKey, ast)
       : ast,
@@ -282,12 +283,15 @@ function parseObject(
     if (op) return op(key, schemaObject[schemaKeys[0]], options);
   }
 
+  const properties = schemaKeys
+    .map(k => parseObjectProperty(key, k, schemaObject[k], options));
+
   return {
     extendsFrom: [],
     key,
-    properties: schemaKeys
-      .map(k => parseMakeOptional(key, k, schemaObject[k], options)),
-    strict: (schemaObject as any).$strict !== false,
+    properties,
+    strict: (schemaObject as any).$strict !== false
+      && properties.every(p => !p.anyKey),
     type: 'object',
   };
 }
