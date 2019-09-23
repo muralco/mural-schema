@@ -151,6 +151,24 @@ Scenario: Partial reference
     };
     """
 
+Scenario: Partial reference array
+  Given a TS file with
+    """
+    interface A { keyA: string; }
+    interface B { pa: Partial<A>[]; }
+    """
+  When generating the schema from that file with exports
+  Then the generated schema is
+    """
+    export const A = {
+      keyA: 'string',
+    };
+
+    export const B = {
+      'pa/': [A],
+    };
+    """
+
 Scenario: Partial optional
   Given a TS file with
     """

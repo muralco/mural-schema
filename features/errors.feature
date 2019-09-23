@@ -11,5 +11,5 @@ Scenario: invalid partial modifier for non-object
   When compiling the invalid schema { "key/": "string" }
   Then the compilation error at message contains
     """
-    "Partial key modifiers can only be used with object values."
+    "Partial key modifiers can only be used with object and object array values."
     """

@@ -216,8 +216,13 @@ const notAnObject = (
   fullKey: (string|number)[],
   schema: Type,
   type: string,
+  allowArray = false,
 ) => new InvalidSchemaError(
-  `${modifier} key modifiers can only be used with object values. Key \`${
+  `${modifier} key modifiers can only be used with object${
+      allowArray
+        ? ' and object array'
+        : ''
+    } values. Key \`${
     fullKey
   }\` maps to a value of type \`${schema}\` (AST=${type})`,
 );
@@ -235,10 +240,17 @@ function parseObjectProperty(
   let ast = parse(fullKey, schema, options);
 
   if (isPartial) {
-    if (ast.type !== 'object') {
-      throw notAnObject('Partial', fullKey, schema, ast.type);
+    const recursive = isPartial === '//';
+    if (ast.type === 'object') {
+      ast = makePartial(ast, recursive);
+    } else if (ast.type === 'array' && ast.item.type === 'object') {
+      ast = {
+        ...ast,
+        item: makePartial(ast.item, recursive),
+      };
+    } else {
+      throw notAnObject('Partial', fullKey, schema, ast.type, true);
     }
-    ast = makePartial(ast, isPartial === '//');
   }
 
   if (isKeyOf) {

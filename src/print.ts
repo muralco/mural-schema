@@ -60,6 +60,13 @@ const getObjectKeySuffix = (ast: Ast): { suffix: string, valueAst: Ast } => {
     };
   }
 
+  if (ast.type === 'array' && ast.item.type === 'function') {
+    return {
+      suffix: FN_SUFFIX[ast.item.key.join('.')] || '',
+      valueAst: ast,
+    };
+  }
+
   if (
     ast.type === 'union'
     && ast.items.length === 2

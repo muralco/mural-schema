@@ -134,6 +134,28 @@ Scenario: error recursive partial key wrong type
   When validating { "key": { "a": { "b": 1 } } }
   Then the validation error is "Expected string, undefined" at ["key", "a", "b"]
 
+# === Partial Array ========================================================== #
+
+Scenario: success partial array key present
+  Given a schema { "key/": [{ "a": "string" }] }
+  When validating { "key": [{ "a": "hey" }] }
+  Then the validation passes
+
+Scenario: success partial array empty array
+  Given a schema { "key/": [{ "a": "string" }] }
+  When validating { "key": [] }
+  Then the validation passes
+
+Scenario: success partial array empty object
+  Given a schema { "key/": [{ "a": "string" }] }
+  When validating { "key": [{}] }
+  Then the validation passes
+
+Scenario: error partial key wrong type
+  Given a schema { "key/": [{ "a": "string" }] }
+  When validating { "key": [{ "a": 1 }] }
+  Then the validation error is "Expected string, undefined" at ["key", 0, "a"]
+
 # === Optional partial ======================================================= #
 
 Scenario: success partial optional key present

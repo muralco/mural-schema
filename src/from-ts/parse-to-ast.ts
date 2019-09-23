@@ -162,9 +162,17 @@ function generateType(
 }
 
 const generatePartial = (ast: Ast, recursive: boolean): Ast => {
+  if (ast.type === 'array') {
+    return {
+      ...ast,
+      item: generatePartial(ast.item, recursive),
+    };
+  }
+
   if (ast.type === 'object') {
     return makePartial(ast, recursive);
   }
+
   if (ast.type === 'function' && ast.fn === FN) {
     return {
       ...ast,
@@ -178,7 +186,20 @@ const generatePartial = (ast: Ast, recursive: boolean): Ast => {
   return ast;
 };
 
-const getPartialType = (node: ts.Node, options: Options) => {
+const getPartialType = (
+  node: ts.Node,
+  options: Options,
+): { recursive: boolean; refNode: ts.TypeNode } | undefined => {
+  if (ts.isArrayTypeNode(node)) {
+    const partial = getPartialType(node.elementType, options);
+    if (!partial) return undefined;
+
+    return {
+      recursive: partial.recursive,
+      refNode: ts.createArrayTypeNode(partial.refNode),
+    };
+  }
+
   if (!ts.isTypeReferenceNode(node) || !node.typeArguments) return undefined;
 
   const refNode = node.typeArguments[0];
