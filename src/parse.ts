@@ -249,7 +249,7 @@ function parseObjectProperty(
   }
 
   return {
-    anyKey: key === '$any',
+    anyKey: actualKey === '$any',
     ast: isOptional
       ? makeOptional(fullKey, ast)
       : ast,

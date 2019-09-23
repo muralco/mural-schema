@@ -309,7 +309,22 @@ Scenario: success nested $any (empty)
   When validating {}
   Then the validation passes
 
+Scenario: success partial nested $any
+  Given a schema { "$any/": { "a": "string", "b": "string" } }
+  When validating { "id": { "a": "some" } }
+  Then the validation passes
+
+Scenario: success recursive partial nested $any
+  Given a schema { "$any//": { "a": { "b": "string", "c": "string" }, "d": "string" } }
+  When validating { "id": { "a": { "b": "some" } } }
+  Then the validation passes
+
 Scenario: error nested $any
   Given a schema { "$any": { "a": "string" } }
   When validating { "x": { "a": 1 } }
   Then the validation error is "Expected string" at ["x", "a"]
+
+Scenario: error partial nested $any
+  Given a schema { "$any/": { "a": "string", "b": "string" } }
+  When validating { "id": { "c": "some" } }
+  Then the validation error is "Unexpected key" at ["id", "c"]
