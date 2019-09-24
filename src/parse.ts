@@ -216,16 +216,19 @@ const notAnObject = (
   fullKey: (string|number)[],
   schema: Type,
   type: string,
-  allowArray = false,
+  allowArrayAndUnion = false,
 ) => new InvalidSchemaError(
   `${modifier} key modifiers can only be used with object${
-      allowArray
-        ? ' and object array'
+      allowArrayAndUnion
+        ? ', object array and object union'
         : ''
     } values. Key \`${
     fullKey
   }\` maps to a value of type \`${schema}\` (AST=${type})`,
 );
+
+const isObjAst = (ast: Ast): ast is ObjectAst =>
+  ast.type === 'object';
 
 function parseObjectProperty(
   parentKey: Key,
@@ -247,6 +250,16 @@ function parseObjectProperty(
       ast = {
         ...ast,
         item: makePartial(ast.item, recursive),
+      };
+    } else if (ast.type === 'union') {
+      const objs = ast.items.filter(isObjAst);
+      if (objs.length !== ast.items.length) {
+        // at least one element of the union is not an object
+        throw notAnObject('Partial', fullKey, schema, ast.type, true);
+      }
+      ast = {
+        ...ast,
+        items: objs.map(o => makePartial(o, recursive)),
       };
     } else {
       throw notAnObject('Partial', fullKey, schema, ast.type, true);

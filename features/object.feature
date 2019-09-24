@@ -156,6 +156,33 @@ Scenario: error partial key wrong type
   When validating { "key": [{ "a": 1 }] }
   Then the validation error is "Expected string, undefined" at ["key", 0, "a"]
 
+# === Partial Union ========================================================== #
+
+Scenario: success partial union first present
+  Given a schema { "key/": [[{ "a": "string" },{ "b": "string"}]] }
+  When validating { "key": { "a": "hey" } }
+  Then the validation passes
+
+Scenario: success partial union second present
+  Given a schema { "key/": [[{ "a": "string" },{ "b": "string"}]] }
+  When validating { "key": { "b": "hey" } }
+  Then the validation passes
+
+Scenario: success partial union empty
+  Given a schema { "key/": [[{ "a": "string" },{ "b": "string"}]] }
+  When validating { "key": {} }
+  Then the validation passes
+
+Scenario: error partial union invalid key
+  Given a schema { "key/": [[{ "a": "string" },{ "b": "string"}]] }
+  When validating { "key": { "c": 1 } }
+  Then the validation error is "Unexpected key" at ["key", "c"]
+
+Scenario: error partial union wrong type
+  Given a schema { "key/": [[{ "a": "string" },{ "b": "string"}]] }
+  When validating { "key": { "a": 1 } }
+  Then the validation error is "Expected string, undefined" at ["key", "a"]
+
 # === Optional partial ======================================================= #
 
 Scenario: success partial optional key present
