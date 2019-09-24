@@ -465,3 +465,8 @@ Function     = ValidationFn | CheckFn;
 ValidationFn = '(obj: any) => ValidationError[]';
 CheckFn      = '(obj: any) => boolean';
 ```
+
+## Internals
+
+If you want to contrib or are curious about how all this works, you can keep
+reading our [INTERNALS (i.e. gory details)](INTERNALS.md) document.
