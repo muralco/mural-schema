@@ -14,8 +14,6 @@ import { makePartial } from '../parse';
 import { flatten } from '../util';
 import { Options } from './types';
 
-const REGEX_STRING_TYPE = 'RegExString';
-
 const getName = (e: ts.EntityName | ts.PropertyName) =>
   (e as ts.Identifier).escapedText as string;
 
@@ -57,6 +55,20 @@ const generateUnion = (
 
 const FN = () => [];
 
+const TYPE_TRANSFORMS: Record<
+NonNullable<Options['customTypeTransform']>,
+(s: string) => string
+> = {
+  'as-is': s => s,
+  camelCase: s => s
+    .replace(/^([A-Z]+)/g, m => m.toLowerCase()),
+  lowercase: s => s.toLowerCase(),
+  'snake-case': s => s
+    .replace(/([A-Z]+)/g, '-$1')
+    .replace(/^-/, '')
+    .toLowerCase(),
+};
+
 const createTypeRef = (name: string): Ast => ({
   fn: FN,
   key: ['ref'],
@@ -66,10 +78,17 @@ const createTypeRef = (name: string): Ast => ({
 
 const generateTypeRef = (
   node: ts.TypeReferenceNode,
+  options: Options,
 ): Ast => {
   const name = getName(node.typeName);
-  const isRegExp = name === REGEX_STRING_TYPE;
-  if (isRegExp) return generateRegEx(node);
+  if (options.regex && options.regex === name) {
+    return generateRegEx(node);
+  }
+
+  if (options.customTypes && options.customTypes.includes(name)) {
+    const fn = TYPE_TRANSFORMS[options.customTypeTransform || 'as-is'];
+    return generateBuiltIn(fn(name));
+  }
 
   return createTypeRef(name);
 };
@@ -120,7 +139,7 @@ function generateType(
   if (ts.isTypeLiteralNode(type)) return generateObject(type, options);
   if (ts.isArrayTypeNode(type)) return generateArray(type, options);
   if (ts.isUnionTypeNode(type)) return generateUnion(type, options);
-  if (ts.isTypeReferenceNode(type)) return generateTypeRef(type);
+  if (ts.isTypeReferenceNode(type)) return generateTypeRef(type, options);
   if (ts.isLiteralTypeNode(type)) return generateLiteral(type);
   if (ts.isIntersectionTypeNode(type)) {
     return generateIntersectionObject(type, options);
@@ -346,8 +365,11 @@ function generateTopLevelType(node: ts.Node, options: Options): Ast | null {
         ? options.ignore(name)
         : options.ignore.includes(name);
       if (shouldIngoreType) return null;
-      if (name === REGEX_STRING_TYPE) return null;
     }
+
+    if (options.regex && options.regex === name) return null;
+
+    if (options.customTypes && options.customTypes.includes(name)) return null;
 
     if (ts.isFunctionTypeNode(node.type)) return null;
 

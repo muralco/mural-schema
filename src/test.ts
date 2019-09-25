@@ -59,14 +59,18 @@ const setup: SetupFn = ({
   );
   When(
     'generating the schema from (?:that|those) files?( with exports)?',
-    withExports => setCtx(
+    (withExports, options) => setCtx(
       '$schema-file',
       fromTs(
         getCtx<string[]>('$ts'),
-        { recursivePartial: ['PartialPartial'] },
+        {
+          recursivePartial: ['PartialPartial'],
+          ...JSON.parse(options || '{}'),
+        },
         { useExport: !!withExports },
       ),
     ),
+    { optional: 'with options' },
   );
   When(
     'compiling the invalid schema',
