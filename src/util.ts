@@ -37,6 +37,38 @@ export const expected = (key: Key, what: string): ValidationError => ({
   message: `Expected ${what}`,
 });
 
+const leastErrors = ([head, ...tail]: ValidationError[][]): ValidationError[] =>
+  tail.reduce((a, b) => a.length <= b.length ? a : b, head);
+
+const objMatchesUnionElement = (key: string) =>
+  (es: ValidationError[]): boolean =>
+    es.every(e =>
+      // is not a type error (e.g. string does not match regex)
+      !e.expected
+      // the error is not for the main union, is for a prop inside the union
+      // element (i.e. we are not complaining that `obj` is not an `object`, we
+      // are complaining that a prop _inside_ `obj` does not match).
+      || e.key.join('.') !== key,
+    );
+
+type OneOfValidationResult = true | ValidationError[][];
+
+const validateOneOf = (
+  validationFns: ValidationFn[],
+  obj: any,
+): OneOfValidationResult =>
+  validationFns.reduce(
+    (acc, fn) => {
+      if (acc === true) return acc;
+
+      const errors = fn(obj);
+      if (!errors.length) return true;
+      acc.push(errors);
+      return acc;
+    },
+    [] as OneOfValidationResult,
+  );
+
 // === Validators and combinators =========================================== //
 
 // Returns a validation function that fails if every function in `validationFns`
@@ -46,18 +78,28 @@ export const oneOf = (
   validationFns: ValidationFn[],
 ): ValidationFn =>
   (obj) => {
-    const errors = validationFns.map(fn => fn(obj));
+    const result = validateOneOf(validationFns, obj);
 
     // At least one fn matches the type and value
-    const ok = errors.find(es => es.length === 0);
-    if (ok) return [];
+    if (result === true) return [];
+
+    const errors = result;
 
     // At least one fn matched the type (i.e. no `expected` error or an expected
-    // error for a different key) but the value had errors
-    const skey = key.join('.');
-    const matchType = errors
-      .find(es => es.every(e => !e.expected || e.key.join('.') !== skey));
-    if (matchType) return matchType;
+    // error for a different key) but the value had errors.
+    //
+    // Imagine we have a union of `number | { a: string }` when we validate a
+    // `{ b: 1 }` we can assume the intention was to present us with an object,
+    // not a `number` so we should show the errors for the second element in the
+    // union (i.e. `{ a: string }`).
+    //
+    // We know the value `obj` matches the type of an element in the union
+    // because the errors we get for that element do not include an `expected`
+    // error for the union key (i.e. `key.join('.')`).
+    //
+    const stringKey = key.join('.');
+    const matchTypes = errors.filter(objMatchesUnionElement(stringKey));
+    if (matchTypes.length) return leastErrors(matchTypes);
 
     // No function managed to match the type
     const invalid = flatten(errors).map(e => e.expected).filter(e => !!e);

@@ -49,3 +49,8 @@ Scenario: error string no matching type
   Given a schema "number|string"
   When validating true
   Then the validation error is "Expected number, string"
+
+Scenario: return errors from best match
+  Given a schema [[{"a": "number", "b": "number"}, {"a": "string", "c": "number"}]]
+  When validating { "a": "hi" }
+  Then the validation error is "Expected number" at ["c"]
