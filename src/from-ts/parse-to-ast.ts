@@ -14,8 +14,11 @@ import { makePartial } from '../parse';
 import { flatten } from '../util';
 import { Options } from './types';
 
-const getName = (e: ts.EntityName | ts.PropertyName) =>
-  (e as ts.Identifier).escapedText as string;
+const getName = (e: ts.EntityName | ts.PropertyName): string =>
+  (e as ts.Identifier).escapedText as string
+  || (e as ts.Identifier).text;
+
+const ANY = '$any';
 
 function generateRegEx(node: ts.TypeReferenceNode): RegExpAst {
   if (!node || !node.typeArguments || !node.typeArguments[0]) {
@@ -88,6 +91,24 @@ const generateTypeRef = (
   if (options.customTypes && options.customTypes.includes(name)) {
     const fn = TYPE_TRANSFORMS[options.customTypeTransform || 'as-is'];
     return generateBuiltIn(fn(name));
+  }
+
+  if (name === 'Record'
+    && node.typeArguments
+    && node.typeArguments.length === 2
+  ) {
+    const valueType = node.typeArguments[1];
+    if (ts.isTypeReferenceNode) {
+      return {
+        extendsFrom: [],
+        key: [],
+        properties: [
+          generateObjectPropertyValue(valueType, ANY, false, options),
+        ],
+        strict: true,
+        type: 'object',
+      };
+    }
   }
 
   return createTypeRef(name);
@@ -244,16 +265,15 @@ const getPartialType = (
 };
 
 const generateAttributeValue = (
-  node: ts.PropertySignature | ts.IndexSignatureDeclaration,
+  type: ts.Node,
+  questionToken: boolean,
   options: Options,
 ): Ast => {
-  if (!node.type) throw `Invalid property value for ${node}`;
-
-  const partial = getPartialType(node.type, options);
+  const partial = getPartialType(type, options);
 
   const valueNode = partial
     ? partial.refNode
-    : node.type;
+    : type;
 
   const valueAst = generateType(valueNode, options);
 
@@ -261,7 +281,7 @@ const generateAttributeValue = (
     ? generatePartial(valueAst, partial.recursive)
     : valueAst;
 
-  return !!node.questionToken
+  return questionToken
     ? {
       items: [ast, generateValue('undefined', undefined)],
       key: [],
@@ -270,38 +290,41 @@ const generateAttributeValue = (
     : ast;
 };
 
+const generateObjectPropertyValue = (
+  type: ts.TypeNode,
+  name: string,
+  questionToken: boolean,
+  options: Options,
+): ObjectPropertyAst => ({
+  anyKey: name === ANY,
+  ast: generateAttributeValue(type, !!questionToken, options),
+  key: [name],
+  objectKey: name,
+});
+
 const generateAttribute = (
-  node: ts.PropertySignature,
+  node: ts.PropertySignature | ts.IndexSignatureDeclaration,
   options: Options,
 ): ObjectPropertyAst => {
-  const name = getName(node.name);
-  return {
-    anyKey: false,
-    ast: generateAttributeValue(node, options),
-    key: [name],
-    objectKey: name,
-  };
+  const { type } = node;
+  if (!type) throw `Invalid property value for ${node}`;
+  return generateObjectPropertyValue(
+    type,
+    ts.isPropertySignature(node) ? getName(node.name) : ANY,
+    !!node.questionToken,
+    options,
+  );
 };
 
-const generateAnyKeyAttribute = (
-  node: ts.IndexSignatureDeclaration,
-  options: Options,
-): ObjectPropertyAst => {
-  const name = '$any';
-  return {
-    anyKey: true,
-    ast: generateAttributeValue(node, options),
-    key: [name],
-    objectKey: name,
-  };
-};
+const isPropertyOrIndex = (
+  m: ts.TypeElement,
+): m is ts.PropertySignature | ts.IndexSignatureDeclaration =>
+  ts.isPropertySignature(m) || ts.isIndexSignatureDeclaration(m);
 
 function generateObject(
   node: ts.InterfaceDeclaration|ts.TypeLiteralNode,
   options: Options,
 ): ObjectAst {
-  const indexDeclaration = node.members.find(ts.isIndexSignatureDeclaration);
-
   const extendsFrom = ts.isInterfaceDeclaration(node) && node.heritageClauses
     ? flatten(node.heritageClauses.map(c => [...c.types]))
       .map(t => t.expression)
@@ -309,13 +332,9 @@ function generateObject(
       .map(t => getName(t as ts.Identifier))
     : [];
 
-  const regularProperties = node.members
-    .filter(ts.isPropertySignature)
+  const properties = node.members
+    .filter(isPropertyOrIndex)
     .map(m => generateAttribute(m, options));
-
-  const properties = indexDeclaration
-    ? [...regularProperties, generateAnyKeyAttribute(indexDeclaration, options)]
-    : regularProperties;
 
   return {
     extendsFrom,

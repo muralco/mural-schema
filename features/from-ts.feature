@@ -72,6 +72,16 @@ Scenario: Object
     };
     """
 
+Scenario: Object with non-identifier props
+  Given a TS file with interface A { 'the-key': boolean; }
+  When generating the schema from that file with exports
+  Then the generated schema is
+    """
+    export const A = {
+      'the-key': 'boolean',
+    };
+    """
+
 Scenario: Extends
   Given a TS file with
     """
@@ -335,6 +345,34 @@ Scenario: Generic dictionary
     """
     export const A = {
       $any: 'string',
+    };
+    """
+
+Scenario: Record by reference
+  Given a TS file with
+    """
+    type A = Record<string, string>;
+    """
+  When generating the schema from that file with exports
+  Then the generated schema is
+    """
+    export const A = {
+      $any: 'string',
+    };
+    """
+
+Scenario: Record by value
+  Given a TS file with
+    """
+    type A = Record<string, { a: string }>;
+    """
+  When generating the schema from that file with exports
+  Then the generated schema is
+    """
+    export const A = {
+      $any: {
+        a: 'string',
+      },
     };
     """
 

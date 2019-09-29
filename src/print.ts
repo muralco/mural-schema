@@ -96,7 +96,7 @@ const printObjectProperty = (
 
   const k = suffix
     ? `'${key}${suffix}'`
-    : key;
+    : `${key}`.match(/[^\w_$]/) ? `'${key}'` : key;
 
   return `${k}: ${padd(printAny(valueAst, options))}`;
 };
