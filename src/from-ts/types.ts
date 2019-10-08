@@ -1,6 +1,8 @@
+export type ListOrPredicate = string[] | ((name: string) => boolean);
+
 export interface Options {
   // Do not generate these types
-  ignore?: string[] | ((name: string) => boolean);
+  ignore?: ListOrPredicate;
 
   // If a TS type name matches one of these, generate a custom type reference
   // For example for:
@@ -17,6 +19,9 @@ export interface Options {
   // If a TS type matches `types`, generate the corresponding custom schema type
   // as `lowercase`, `camelCase`, `snake-case` or `as-is` (default)
   customTypeTransform?: 'lowercase' | 'camelCase' | 'snake-case' | 'as-is';
+
+  // If specified, generate schemas only for these types
+  only?: ListOrPredicate;
 
   // Match the following TS types as recursive partial types
   recursivePartial?: string[];

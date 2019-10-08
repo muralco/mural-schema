@@ -488,3 +488,105 @@ Scenario: Ignore types
       b: B,
     };
     """
+
+Scenario: Ignore interfaces
+  Given a TS file with
+    """
+    type A = string;
+    interface X = { a: A };
+    """
+  When generating the schema from that file with exports with options
+    """
+    {
+      "ignore": ["X"]
+    }
+    """
+  Then the generated schema is
+    """
+    export const A = 'string';
+    """
+
+Scenario: Only types
+  Given a TS file with
+    """
+    type A = string;
+    type B = number;
+    type X = { a: A; b: B };
+    """
+  When generating the schema from that file with exports with options
+    """
+    {
+      "only": ["B", "X"]
+    }
+    """
+  Then the generated schema is
+    """
+    export const B = 'number';
+
+    export const X = {
+      a: A,
+      b: B,
+    };
+    """
+
+Scenario: Only interfaces
+  Given a TS file with
+    """
+    type A = string;
+    interface X = { a: A };
+    """
+  When generating the schema from that file with exports with options
+    """
+    {
+      "only": ["A"]
+    }
+    """
+  Then the generated schema is
+    """
+    export const A = 'string';
+    """
+
+Scenario: Generate declarations
+  Given a TS file with
+    """
+    declare module "m" {
+      export type A = string;
+    }
+    """
+  When generating the schema from that file with exports
+  Then the generated schema is
+    """
+    export const mA = 'string';
+    """
+
+Scenario: Generate declarations (slash, dash module)
+  Given a TS file with
+    """
+    declare module "@util/group-by" {
+      export type A = string;
+    }
+    """
+  When generating the schema from that file with exports
+  Then the generated schema is
+    """
+    export const utilGroupByA = 'string';
+    """
+
+Scenario: Generate only some declarations
+  Given a TS file with
+    """
+    declare module "m" {
+      export type A = string;
+      export type B = string;
+    }
+    """
+  When generating the schema from that file with exports with options
+    """
+    {
+      "only": ["mB"]
+    }
+    """
+  Then the generated schema is
+    """
+    export const mB = 'string';
+    """

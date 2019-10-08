@@ -12,7 +12,7 @@ import {
 } from '../ast';
 import { makePartial } from '../parse';
 import { flatten } from '../util';
-import { Options } from './types';
+import { ListOrPredicate, Options } from './types';
 
 const getName = (e: ts.EntityName | ts.PropertyName): string =>
   (e as ts.Identifier).escapedText as string
@@ -376,42 +376,68 @@ function generateIntersectionObject(
   };
 }
 
-function generateTopLevelType(node: ts.Node, options: Options): Ast | null {
+const includesOrMatches = (
+  listOrPredicate: ListOrPredicate,
+  value: string,
+): boolean =>
+  typeof listOrPredicate === 'function'
+    ? listOrPredicate(value)
+    : listOrPredicate.includes(value);
+
+const shouldIgnore = (name: string, options: Options): boolean =>
+  !!options.ignore &&  includesOrMatches(options.ignore, name)
+  || !!options.only && !includesOrMatches(options.only, name);
+
+function generateTopLevelType(
+  node: ts.Node,
+  options: Options,
+  prefix: string,
+): Ast[] {
   if (ts.isTypeAliasDeclaration(node)) {
-    const name = getName(node.name);
-    if (options.ignore) {
-      const shouldIngoreType = typeof options.ignore === 'function'
-        ? options.ignore(name)
-        : options.ignore.includes(name);
-      if (shouldIngoreType) return null;
-    }
+    const name = `${prefix}${getName(node.name)}`;
+    if (shouldIgnore(name, options)) return [];
 
-    if (options.regex && options.regex === name) return null;
+    if (options.regex && options.regex === name) return [];
 
-    if (options.customTypes && options.customTypes.includes(name)) return null;
+    if (options.customTypes && options.customTypes.includes(name)) return [];
 
-    if (ts.isFunctionTypeNode(node.type)) return null;
+    if (ts.isFunctionTypeNode(node.type)) return [];
 
-    return {
+    return [{
       ...generateType(node.type, options),
       key: [name],
-    };
+    }];
   }
   if (ts.isInterfaceDeclaration(node)) {
-    const name = getName(node.name);
-    return {
+    const name = `${prefix}${getName(node.name)}`;
+    if (shouldIgnore(name, options)) return [];
+
+    return [{
       ...generateObject(node, options),
       key: [name],
-    };
+    }];
+  }
+  if (ts.isModuleDeclaration(node) && node.body) {
+    const { body } = node;
+    if (ts.isModuleBlock(body)) {
+      const prefix = getName(node.name)
+        .replace(/\//g, '-')
+        .replace(/-([a-z])/g, m => m.toUpperCase())
+        .replace(/\W/g, '');
+
+      return generateTypes(body.statements, options, prefix);
+    }
   }
 
-  return null;
+  return [];
 }
 
-const generateTypes = (nodes: ts.NodeArray<ts.Node>, options: Options): Ast[] =>
-  nodes
-    .map(n => generateTopLevelType(n, options))
-    .filter(n => !!n) as Ast[];
+const generateTypes = (
+  nodes: ts.NodeArray<ts.Node>,
+  options: Options,
+  prefix: string = '',
+): Ast[] =>
+  flatten(nodes.map(n => generateTopLevelType(n, options, prefix)));
 
 export const parse = (sourceFile: ts.SourceFile, options: Options) =>
   generateTypes(sourceFile.statements, options);
