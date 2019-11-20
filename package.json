@@ -1,5 +1,5 @@
 {
-  "name": "mural-schema",
+  "name": "@miroculus/schema",
   "version": "3.3.1",
   "description": "A JSON validation library using pure JSON schemas",
   "main": "index.js",
