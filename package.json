@@ -1,6 +1,6 @@
 {
   "name": "@miroculus/schema",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "description": "A JSON validation library using pure JSON schemas",
   "main": "index.js",
   "types": "index.d.ts",
