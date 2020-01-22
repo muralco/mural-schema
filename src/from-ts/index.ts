@@ -42,10 +42,12 @@ const printOptions: PrintOptions = {
   useExport: opts.some(o => o === '-e'),
 };
 
-const content = fileNames
-  .map(fileName => readFileSync(fileName).toString());
+const content = fileNames.map(fileName => readFileSync(fileName).toString());
 
 console.log(
-  `// This file was generated DO NOT EDIT!\n${
-  fromTs(content, parseOptions, printOptions).trim()}\n`,
+  `// This file was generated DO NOT EDIT!\n${fromTs(
+    content,
+    parseOptions,
+    printOptions,
+  ).trim()}\n`,
 );

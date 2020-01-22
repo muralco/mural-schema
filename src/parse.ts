@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
 import {
   ArrayAst,
   Ast,
@@ -19,26 +20,15 @@ import {
   ParseOptions,
   Type,
 } from './types';
-import {
-  expected,
-  isObjectType,
-  isUnionType,
-} from './util';
+import { expected, isObjectType, isUnionType } from './util';
 
-const parseRegExp = (
-  key: Key,
-  schema: RegExp,
-): RegExpAst => ({
+const parseRegExp = (key: Key, schema: RegExp): RegExpAst => ({
   key,
-  type:  'regexp',
+  type: 'regexp',
   value: schema,
 });
 
-const parseValue = <T>(
-  key: Key,
-  value: T,
-  name: string,
-): ValueAst<T> => ({
+const parseValue = <T>(key: Key, value: T, name: string): ValueAst<T> => ({
   key,
   name,
   type: 'value',
@@ -60,12 +50,10 @@ const parseFunction = (
   schemaFunction: FunctionType,
   name: string,
 ): FunctionAst => ({
-  fn: (obj) => {
+  fn: obj => {
     const error = schemaFunction(obj);
     if (typeof error === 'boolean') {
-      return error
-      ? []
-      : [expected(key, name)];
+      return error ? [] : [expected(key, name)];
     }
     return error;
   },
@@ -83,39 +71,33 @@ const parseLiteral = (
   value: schemaLiteral,
 });
 
-const makeOptional = (
-  key: Key,
-  ast: Ast,
-): UnionAst => ({
+const makeOptional = (key: Key, ast: Ast): UnionAst => ({
   items: [ast, parseValue(key, undefined, 'undefined')],
   key,
   type: 'union',
 });
 
-export const makePartial = (
-  ast: ObjectAst,
-  recursive: boolean,
-): ObjectAst => {
+export const makePartial = (ast: ObjectAst, recursive: boolean): ObjectAst => {
   return {
     ...ast,
     properties: ast.properties.map(p => ({
       ...p,
       ast: makeOptional(
         p.key,
-        recursive && p.ast.type === 'object'
-          ? makePartial(p.ast, true)
-          : p.ast,
+        recursive && p.ast.type === 'object' ? makePartial(p.ast, true) : p.ast,
       ),
     })),
   };
 };
 
 const makeKeyof = (ast: ObjectAst): UnionAst => ({
-  items: ast.properties.map((p: ObjectPropertyAst): LiteralAst => ({
-    key: ast.key,
-    type: 'literal',
-    value: p.objectKey,
-  })),
+  items: ast.properties.map(
+    (p: ObjectPropertyAst): LiteralAst => ({
+      key: ast.key,
+      type: 'literal',
+      value: p.objectKey,
+    }),
+  ),
   key: ast.key,
   type: 'union',
 });
@@ -165,9 +147,10 @@ function parseTypeName(
     };
   }
 
-  if (startsAndEndsWith(schema, '"')
-    || startsAndEndsWith(schema, '\'')
-    || startsAndEndsWith(schema, '`')
+  if (
+    startsAndEndsWith(schema, '"') ||
+    startsAndEndsWith(schema, "'") ||
+    startsAndEndsWith(schema, '`')
   ) {
     return {
       key,
@@ -184,13 +167,12 @@ function parseTypeName(
     throw new InvalidSchemaError(`Unknown type for \`${key}\`: ${schema}`);
   }
 
-  const ast = (typeof custom !== 'function')
-    ? parse(key, custom, options)
-    : parseFunction(key, custom, schema);
+  const ast =
+    typeof custom !== 'function'
+      ? parse(key, custom, options)
+      : parseFunction(key, custom, schema);
 
-  return allowUndefined
-    ? makeOptional(key, ast)
-    : ast;
+  return allowUndefined ? makeOptional(key, ast) : ast;
 }
 
 // === Object types ========================================================= //
@@ -205,30 +187,27 @@ const KEY_MODS = [
 const KEY_REGEX = new RegExp(`${KEY_MODS.map(v => `(${v})?`).join('')}$`);
 
 const getKeyMods = (key: string) => {
-  const [isKeyOf, isPartial, isOptional] =
-    (key.match(KEY_REGEX) || []).slice(1);
+  const [isKeyOf, isPartial, isOptional] = (key.match(KEY_REGEX) || []).slice(
+    1,
+  );
   const actualKey = key.replace(KEY_REGEX, '');
   return { actualKey: actualKey || key, isOptional, isPartial, isKeyOf };
 };
 
 const notAnObject = (
   modifier: string,
-  fullKey: (string|number)[],
+  fullKey: (string | number)[],
   schema: Type,
   type: string,
   allowArrayAndUnion = false,
-) => new InvalidSchemaError(
-  `${modifier} key modifiers can only be used with object${
-      allowArrayAndUnion
-        ? ', object array and object union'
-        : ''
-    } values. Key \`${
-    fullKey
-  }\` maps to a value of type \`${schema}\` (AST=${type})`,
-);
+) =>
+  new InvalidSchemaError(
+    `${modifier} key modifiers can only be used with object${
+      allowArrayAndUnion ? ', object array and object union' : ''
+    } values. Key \`${fullKey}\` maps to a value of type \`${schema}\` (AST=${type})`,
+  );
 
-const isObjAst = (ast: Ast): ast is ObjectAst =>
-  ast.type === 'object';
+const isObjAst = (ast: Ast): ast is ObjectAst => ast.type === 'object';
 
 function parseObjectProperty(
   parentKey: Key,
@@ -275,9 +254,7 @@ function parseObjectProperty(
 
   return {
     anyKey: actualKey === '$any',
-    ast: isOptional
-      ? makeOptional(fullKey, ast)
-      : ast,
+    ast: isOptional ? makeOptional(fullKey, ast) : ast,
     key: fullKey,
     objectKey: actualKey,
   };
@@ -294,29 +271,35 @@ const OBJ_OPERATORS: { [key: string]: typeof parse } = {
   },
 };
 
+interface MaybeStrict {
+  $strict?: boolean;
+}
+
 function parseObject(
   key: Key,
   schemaObject: ObjectType,
   options: ParseOptions,
 ): Ast {
-  const schemaKeys = Object
-    .keys(schemaObject)
-    .filter(k => !OBJ_RESERVED.includes(k));
+  const schemaKeys = Object.keys(schemaObject).filter(
+    k => !OBJ_RESERVED.includes(k),
+  );
 
   if (schemaKeys.length === 1) {
     const op = OBJ_OPERATORS[schemaKeys[0]];
     if (op) return op(key, schemaObject[schemaKeys[0]], options);
   }
 
-  const properties = schemaKeys
-    .map(k => parseObjectProperty(key, k, schemaObject[k], options));
+  const properties = schemaKeys.map(k =>
+    parseObjectProperty(key, k, schemaObject[k], options),
+  );
 
   return {
     extendsFrom: [],
     key,
     properties,
-    strict: (schemaObject as any).$strict !== false
-      && properties.every(p => !p.anyKey),
+    strict:
+      (schemaObject as MaybeStrict).$strict !== false &&
+      properties.every(p => !p.anyKey),
     type: 'object',
   };
 }
@@ -327,10 +310,10 @@ function parseArray(
   schemaArray: ArrayType,
   options: ParseOptions,
 ): ArrayAst {
-
-  const item = schemaArray.length === 1
-    ? parse(key, schemaArray[0], options)
-    : parseUnion(key, schemaArray, options);
+  const item =
+    schemaArray.length === 1
+      ? parse(key, schemaArray[0], options)
+      : parseUnion(key, schemaArray, options);
 
   return {
     item,
@@ -340,11 +323,7 @@ function parseArray(
 }
 
 // === Global =============================================================== //
-export function parse(
-  key: Key,
-  schema: Type,
-  options: ParseOptions,
-): Ast {
+export function parse(key: Key, schema: Type, options: ParseOptions): Ast {
   if (isObjectType(schema)) return parseObject(key, schema, options);
   if (isUnionType(schema)) return parseUnion(key, schema[0], options);
   if (Array.isArray(schema)) return parseArray(key, schema, options);

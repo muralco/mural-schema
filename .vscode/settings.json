@@ -1,0 +1,28 @@
+{
+  "[typescript]": {
+    "editor.formatOnSave": true
+  },
+  "editor.rulers": [80],
+  "eslint.validate": [
+    "typescript"
+  ],
+  "prettier.useTabs": false,
+  "files.exclude": {
+    "dist": true
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "eslint.options": {
+    "parserOptions": {
+      "project": [
+        "${workspaceFolder}/tsconfig.json"
+      ]
+    }
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/coverage": true,
+    "**/dist": true
+  }
+}

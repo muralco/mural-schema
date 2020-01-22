@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
 import {
   ArrayAst,
   Ast,
@@ -19,7 +20,7 @@ import {
 } from './types';
 
 interface Options {
-  mapCustomType?: (ast: Ast) => JsonSchema|undefined;
+  mapCustomType?: (ast: Ast) => JsonSchema | undefined;
 }
 
 const mapCustom = (ast: Ast, options: Options): JsonSchema => {
@@ -37,10 +38,14 @@ const mapArray = (ast: ArrayAst, options: Options): JsonSchemaArray => ({
 
 const mapFunction = (ast: FunctionAst, options: Options): JsonSchema => {
   switch (ast.name) {
-    case 'boolean': return { type: 'boolean' };
-    case 'number': return { type: 'number' };
-    case 'string': return { type: 'string' };
-    default: return mapCustom(ast, options);
+    case 'boolean':
+      return { type: 'boolean' };
+    case 'number':
+      return { type: 'number' };
+    case 'string':
+      return { type: 'string' };
+    default:
+      return mapCustom(ast, options);
   }
 };
 
@@ -52,21 +57,16 @@ const isUndefined = (ast: Ast): boolean =>
   ast.type === 'value' && ast.value === undefined;
 
 const isOptional = (ast: Ast): ast is UnionAst =>
-  ast.type === 'union'
-  && ast.items.length === 2
-  && ast.items.some(isUndefined);
+  ast.type === 'union' && ast.items.length === 2 && ast.items.some(isUndefined);
 
 const mapObject = (ast: ObjectAst, options: Options): JsonSchemaObject => ({
-  properties: ast.properties.reduce(
-    (acc, p) => {
-      const propAst = isOptional(p.ast)
+  properties: ast.properties.reduce((acc, p) => {
+    const propAst = isOptional(p.ast)
       ? { ...p.ast, items: p.ast.items.filter(i => !isUndefined(i)) }
       : p.ast;
-      acc[p.objectKey] = mapAny(propAst, options);
-      return acc;
-    },
-    {} as JsonSchemaObject['properties'],
-  ),
+    acc[p.objectKey] = mapAny(propAst, options);
+    return acc;
+  }, {} as JsonSchemaObject['properties']),
   required: ast.properties
     .filter(p => !isOptional(p.ast))
     .map(p => p.objectKey),
@@ -82,27 +82,39 @@ const mapUnion = (ast: UnionAst, options: Options): JsonSchema =>
   ast.items.length === 1
     ? mapAny(ast.items[0], options)
     : ast.items.every(i => i.type === 'literal')
-      ? { enum: ast.items.map(i => (i as LiteralAst).value) }
-      : { anyOf: ast.items.map(i => mapAny(i, options)) };
+    ? { enum: ast.items.map(i => (i as LiteralAst).value) }
+    : { anyOf: ast.items.map(i => mapAny(i, options)) };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mapValue = (ast: ValueAst<any>, options: Options): JsonSchema => {
   switch (ast.value) {
-    case 'undefined': return {};
-    case 'null': return { type: 'null' };
-    default: return mapCustom(ast, options);
+    case 'undefined':
+      return {};
+    case 'null':
+      return { type: 'null' };
+    default:
+      return mapCustom(ast, options);
   }
 };
 
 const mapAny = (ast: Ast, options: Options): JsonSchema => {
   switch (ast.type) {
-    case 'array': return mapArray(ast, options);
-    case 'function': return mapFunction(ast, options);
-    case 'literal': return mapLiteral(ast);
-    case 'object': return mapObject(ast, options);
-    case 'regexp': return mapRegExp(ast);
-    case 'union': return mapUnion(ast, options);
-    case 'value': return mapValue(ast, options);
-    default: return {};
+    case 'array':
+      return mapArray(ast, options);
+    case 'function':
+      return mapFunction(ast, options);
+    case 'literal':
+      return mapLiteral(ast);
+    case 'object':
+      return mapObject(ast, options);
+    case 'regexp':
+      return mapRegExp(ast);
+    case 'union':
+      return mapUnion(ast, options);
+    case 'value':
+      return mapValue(ast, options);
+    default:
+      return {};
   }
 };
 
