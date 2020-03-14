@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
 import * as ts from 'typescript';
 import {
   ArrayAst,
@@ -15,8 +16,7 @@ import { flatten } from '../util';
 import { ListOrPredicate, Options } from './types';
 
 const getName = (e: ts.EntityName | ts.PropertyName): string =>
-  (e as ts.Identifier).escapedText as string
-  || (e as ts.Identifier).text;
+  ((e as ts.Identifier).escapedText as string) || (e as ts.Identifier).text;
 
 const ANY = '$any';
 
@@ -24,12 +24,11 @@ function generateRegEx(node: ts.TypeReferenceNode): RegExpAst {
   if (!node || !node.typeArguments || !node.typeArguments[0]) {
     throw `Invalid RegExp type`;
   }
-  const { text } = (node.typeArguments[0] as any).literal;
+  const { text } = (node.typeArguments[0] as ts.LiteralTypeNode)
+    .literal as ts.LiteralExpression;
   const withFlags = text.match(/^\/(.*)\/(\w+)$/); // /expr/flags
 
-  const [expr, flags] = withFlags
-    ? withFlags.slice(1)
-    : [text, undefined];
+  const [expr, flags] = withFlags ? withFlags.slice(1) : [text, undefined];
 
   return {
     key: [],
@@ -38,19 +37,13 @@ function generateRegEx(node: ts.TypeReferenceNode): RegExpAst {
   };
 }
 
-const generateArray = (
-  type: ts.ArrayTypeNode,
-  options: Options,
-): ArrayAst => ({
+const generateArray = (type: ts.ArrayTypeNode, options: Options): ArrayAst => ({
   item: generateType(type.elementType, options),
   key: [],
   type: 'array',
 });
 
-const generateUnion = (
-  node: ts.UnionTypeNode,
-  options: Options,
-): UnionAst => ({
+const generateUnion = (node: ts.UnionTypeNode, options: Options): UnionAst => ({
   items: node.types.map(t => generateType(t, options)),
   key: [],
   type: 'union',
@@ -59,17 +52,17 @@ const generateUnion = (
 const FN = () => [];
 
 const TYPE_TRANSFORMS: Record<
-NonNullable<Options['customTypeTransform']>,
-(s: string) => string
+  NonNullable<Options['customTypeTransform']>,
+  (s: string) => string
 > = {
   'as-is': s => s,
-  camelCase: s => s
-    .replace(/^([A-Z]+)/g, m => m.toLowerCase()),
+  camelCase: s => s.replace(/^([A-Z]+)/g, m => m.toLowerCase()),
   lowercase: s => s.toLowerCase(),
-  'snake-case': s => s
-    .replace(/([A-Z]+)/g, '-$1')
-    .replace(/^-/, '')
-    .toLowerCase(),
+  'snake-case': s =>
+    s
+      .replace(/([A-Z]+)/g, '-$1')
+      .replace(/^-/, '')
+      .toLowerCase(),
 };
 
 const createTypeRef = (name: string): Ast => ({
@@ -79,10 +72,7 @@ const createTypeRef = (name: string): Ast => ({
   type: 'function',
 });
 
-const generateTypeRef = (
-  node: ts.TypeReferenceNode,
-  options: Options,
-): Ast => {
+const generateTypeRef = (node: ts.TypeReferenceNode, options: Options): Ast => {
   const name = getName(node.typeName);
   if (options.regex && options.regex === name) {
     return generateRegEx(node);
@@ -93,12 +83,13 @@ const generateTypeRef = (
     return generateBuiltIn(fn(name));
   }
 
-  if (name === 'Record'
-    && node.typeArguments
-    && node.typeArguments.length === 2
+  if (
+    name === 'Record' &&
+    node.typeArguments &&
+    node.typeArguments.length === 2
   ) {
     const valueType = node.typeArguments[1];
-    if (ts.isTypeReferenceNode) {
+    if (ts.isTypeReferenceNode(node)) {
       return {
         extendsFrom: [],
         key: [],
@@ -117,12 +108,14 @@ const generateTypeRef = (
 const generateKeyOf = (node: ts.TypeReferenceNode): ObjectAst => ({
   extendsFrom: [],
   key: [],
-  properties: [{
-    anyKey: false,
-    ast: createTypeRef(getName(node.typeName)),
-    key: ['$keyof'],
-    objectKey: '$keyof',
-  }],
+  properties: [
+    {
+      anyKey: false,
+      ast: createTypeRef(getName(node.typeName)),
+      key: ['$keyof'],
+      objectKey: '$keyof',
+    },
+  ],
   strict: true,
   type: 'object',
 });
@@ -138,10 +131,10 @@ const generateLiteral = (node: ts.LiteralTypeNode): LiteralAst => ({
   key: [],
   type: 'literal',
   value: ts.isLiteralExpression(node.literal)
-  ? node.literal.kind === ts.SyntaxKind.FirstLiteralToken
-    ? parseInt(node.literal.text, 10) // number
-    : node.literal.text
-  : node.literal.kind === ts.SyntaxKind.TrueKeyword
+    ? node.literal.kind === ts.SyntaxKind.FirstLiteralToken
+      ? parseInt(node.literal.text, 10) // number
+      : node.literal.text
+    : node.literal.kind === ts.SyntaxKind.TrueKeyword
     ? true
     : false,
 });
@@ -153,10 +146,7 @@ const generateValue = <T>(name: string, value: T): ValueAst<T> => ({
   value,
 });
 
-function generateType(
-  type: ts.Node,
-  options: Options,
-): Ast {
+function generateType(type: ts.Node, options: Options): Ast {
   if (ts.isTypeLiteralNode(type)) return generateObject(type, options);
   if (ts.isArrayTypeNode(type)) return generateArray(type, options);
   if (ts.isUnionTypeNode(type)) return generateUnion(type, options);
@@ -165,9 +155,10 @@ function generateType(
   if (ts.isIntersectionTypeNode(type)) {
     return generateIntersectionObject(type, options);
   }
-  if (ts.isTypeOperatorNode(type)
-    && type.operator === ts.SyntaxKind.KeyOfKeyword
-    && ts.isTypeReferenceNode(type.type)
+  if (
+    ts.isTypeOperatorNode(type) &&
+    type.operator === ts.SyntaxKind.KeyOfKeyword &&
+    ts.isTypeReferenceNode(type.type)
   ) {
     return generateKeyOf(type.type);
   }
@@ -216,11 +207,7 @@ const generatePartial = (ast: Ast, recursive: boolean): Ast => {
   if (ast.type === 'function' && ast.fn === FN) {
     return {
       ...ast,
-      key: [
-        recursive
-          ? 'recursive-partial-ref'
-          : 'partial-ref',
-      ],
+      key: [recursive ? 'recursive-partial-ref' : 'partial-ref'],
     };
   }
   return ast;
@@ -271,22 +258,18 @@ const generateAttributeValue = (
 ): Ast => {
   const partial = getPartialType(type, options);
 
-  const valueNode = partial
-    ? partial.refNode
-    : type;
+  const valueNode = partial ? partial.refNode : type;
 
   const valueAst = generateType(valueNode, options);
 
-  const ast = partial
-    ? generatePartial(valueAst, partial.recursive)
-    : valueAst;
+  const ast = partial ? generatePartial(valueAst, partial.recursive) : valueAst;
 
   return questionToken
     ? {
-      items: [ast, generateValue('undefined', undefined)],
-      key: [],
-      type: 'union',
-    }
+        items: [ast, generateValue('undefined', undefined)],
+        key: [],
+        type: 'union',
+      }
     : ast;
 };
 
@@ -322,15 +305,16 @@ const isPropertyOrIndex = (
   ts.isPropertySignature(m) || ts.isIndexSignatureDeclaration(m);
 
 function generateObject(
-  node: ts.InterfaceDeclaration|ts.TypeLiteralNode,
+  node: ts.InterfaceDeclaration | ts.TypeLiteralNode,
   options: Options,
 ): ObjectAst {
-  const extendsFrom = ts.isInterfaceDeclaration(node) && node.heritageClauses
-    ? flatten(node.heritageClauses.map(c => [...c.types]))
-      .map(t => t.expression)
-      .filter(t => ts.isIdentifier(t))
-      .map(t => getName(t as ts.Identifier))
-    : [];
+  const extendsFrom =
+    ts.isInterfaceDeclaration(node) && node.heritageClauses
+      ? flatten(node.heritageClauses.map(c => [...c.types]))
+          .map(t => t.expression)
+          .filter(t => ts.isIdentifier(t))
+          .map(t => getName(t as ts.Identifier))
+      : [];
 
   const properties = node.members
     .filter(isPropertyOrIndex)
@@ -359,13 +343,8 @@ function generateIntersectionObject(
 
   const strict = objs.every(o => o.strict);
 
-  const extendsFrom = [
-    ...refs,
-    ...flatten(objs.map(o => o.extendsFrom)),
-  ];
-  const properties = flatten(
-    objs.map(o => o.properties),
-  );
+  const extendsFrom = [...refs, ...flatten(objs.map(o => o.extendsFrom))];
+  const properties = flatten(objs.map(o => o.properties));
 
   return {
     extendsFrom,
@@ -385,8 +364,8 @@ const includesOrMatches = (
     : listOrPredicate.includes(value);
 
 const shouldIgnore = (name: string, options: Options): boolean =>
-  !!options.ignore &&  includesOrMatches(options.ignore, name)
-  || !!options.only && !includesOrMatches(options.only, name);
+  (!!options.ignore && includesOrMatches(options.ignore, name)) ||
+  (!!options.only && !includesOrMatches(options.only, name));
 
 function generateTopLevelType(
   node: ts.Node,
@@ -403,19 +382,23 @@ function generateTopLevelType(
 
     if (ts.isFunctionTypeNode(node.type)) return [];
 
-    return [{
-      ...generateType(node.type, options),
-      key: [name],
-    }];
+    return [
+      {
+        ...generateType(node.type, options),
+        key: [name],
+      },
+    ];
   }
   if (ts.isInterfaceDeclaration(node)) {
     const name = `${prefix}${getName(node.name)}`;
     if (shouldIgnore(name, options)) return [];
 
-    return [{
-      ...generateObject(node, options),
-      key: [name],
-    }];
+    return [
+      {
+        ...generateObject(node, options),
+        key: [name],
+      },
+    ];
   }
   if (ts.isModuleDeclaration(node) && node.body) {
     const { body } = node;
@@ -435,9 +418,8 @@ function generateTopLevelType(
 const generateTypes = (
   nodes: ts.NodeArray<ts.Node>,
   options: Options,
-  prefix: string = '',
-): Ast[] =>
-  flatten(nodes.map(n => generateTopLevelType(n, options, prefix)));
+  prefix = '',
+): Ast[] => flatten(nodes.map(n => generateTopLevelType(n, options, prefix)));
 
 export const parse = (sourceFile: ts.SourceFile, options: Options) =>
   generateTypes(sourceFile.statements, options);

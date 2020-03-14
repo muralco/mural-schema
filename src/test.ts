@@ -10,8 +10,8 @@ const parseJSON = (s: string) =>
   s === 'undefined'
     ? undefined
     : s.startsWith('/') && s.endsWith('/') && s.length > 1
-      ? new RegExp(s.substring(1, s.length - 1))
-      : JSON.parse(s);
+    ? new RegExp(s.substring(1, s.length - 1))
+    : JSON.parse(s);
 
 const opts: S.ParseOptions = {
   customTypes: {
@@ -25,9 +25,7 @@ const opts: S.ParseOptions = {
   },
 };
 
-const setup: SetupFn = ({
-  compare, getCtx, Given, setCtx, Then, When,
-}) => {
+const setup: SetupFn = ({ compare, getCtx, Given, setCtx, Then, When }) => {
   const appendCtx = <T>(k: string, v: T) => {
     const vs = getCtx<T[]>(k) || [];
     vs.push(v);
@@ -36,17 +34,12 @@ const setup: SetupFn = ({
 
   Given(
     'a schema',
-    schema => setCtx('$schema', S.parseSchema(
-      parseJSON(schema),
-      opts,
-    )),
+    schema => setCtx('$schema', S.parseSchema(parseJSON(schema), opts)),
     { inline: true },
   );
-  Given(
-    'a TS file with',
-    content => appendCtx('$ts', content),
-    { inline: true },
-  );
+  Given('a TS file with', content => appendCtx('$ts', content), {
+    inline: true,
+  });
   When(
     'validating',
     obj => setCtx('$errors', getCtx<S.ValidationFn>('$schema')(parseJSON(obj))),
@@ -59,22 +52,23 @@ const setup: SetupFn = ({
   );
   When(
     'generating the schema from (?:that|those) files?( with exports)?',
-    (withExports, options) => setCtx(
-      '$schema-file',
-      fromTs(
-        getCtx<string[]>('$ts'),
-        {
-          recursivePartial: ['PartialPartial'],
-          ...JSON.parse(options || '{}'),
-        },
-        { useExport: !!withExports },
+    (withExports, options) =>
+      setCtx(
+        '$schema-file',
+        fromTs(
+          getCtx<string[]>('$ts'),
+          {
+            recursivePartial: ['PartialPartial'],
+            ...JSON.parse(options || '{}'),
+          },
+          { useExport: !!withExports },
+        ),
       ),
-    ),
     { optional: 'with options' },
   );
   When(
     'compiling the invalid schema',
-    (schema) => {
+    schema => {
       const json = parseJSON(schema);
       try {
         S.parseSchema(json);
@@ -87,16 +81,17 @@ const setup: SetupFn = ({
     { inline: true },
   );
 
-  Then(
-    'the validation passes',
-    () => compare('is', getCtx('$errors'), '[]'),
+  Then('the validation passes', () => compare('is', getCtx('$errors'), '[]'));
+  Then('the validation error is "(.*)"(?: at (\\[.*\\]))?', (message, key) =>
+    compare(
+      'includes',
+      getCtx('$errors'),
+      JSON.stringify({
+        key: parseJSON(key || '[]'),
+        message,
+      }),
+    ),
   );
-  Then(
-    'the validation error is "(.*)"(?: at (\\[.*\\]))?',
-    (message, key) => compare('includes', getCtx('$errors'), JSON.stringify({
-      key: parseJSON(key || '[]'),
-      message,
-    })));
   Then(
     'the resulting schema {op}',
     (op, expected) => compare(op, getCtx('$json'), expected),
@@ -104,24 +99,20 @@ const setup: SetupFn = ({
   );
   Then(
     'the generated schema {op}',
-    (op, expected) => compare(
-      op,
-      getCtx('$schema-file'),
-      `"${expected
+    (op, expected) =>
+      compare(
+        op,
+        getCtx('$schema-file'),
+        `"${expected
           .replace(/\\/g, '\\\\')
           .replace(/\n/g, '\\n')
-          .replace(/"/g, '\\"')
-      }"`,
-    ),
+          .replace(/"/g, '\\"')}"`,
+      ),
     { inline: true },
   );
   Then(
     'the compilation error {op}',
-    (op, expected) => compare(
-      op,
-      getCtx('$error'),
-      expected,
-    ),
+    (op, expected) => compare(op, getCtx('$error'), expected),
     { inline: true },
   );
 };
@@ -129,6 +120,7 @@ const setup: SetupFn = ({
 pickledCucumber(setup);
 
 // === Compile-time assertions ============================================== //
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const staticAssert = (_: S.Type) => {};
 // literals
 staticAssert(1);

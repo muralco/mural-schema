@@ -5,29 +5,20 @@ export interface ObjectType {
 
 type LiteralType = string | number | boolean;
 
-type SimpleType =
-  string
-  | LiteralType
-  | RegExp
-  | undefined
-  | null;
+type SimpleType = string | LiteralType | RegExp | undefined | null;
 
 type ScalarType = ObjectType | SimpleType;
 export type ArrayType = ScalarType[];
-export type UnionType = (ScalarType|ArrayType)[][];
+export type UnionType = (ScalarType | ArrayType)[][];
 
-export type ValidationFn = (obj: any) => ValidationError[];
+export type ValidationFn = (obj: unknown) => ValidationError[];
 
 export type FunctionType = ValidationFn | CheckFn;
 
-export type Type =
-  ScalarType
-  | ArrayType
-  | UnionType
-  | FunctionType;
+export type Type = ScalarType | ArrayType | UnionType | FunctionType;
 
 // === Process types ======================================================== //
-export type Key = (string|number)[];
+export type Key = (string | number)[];
 
 export interface ValidationError {
   message: string;
@@ -35,7 +26,7 @@ export interface ValidationError {
   expected?: string;
 }
 
-type CheckFn = (obj: any) => boolean;
+type CheckFn = (obj: unknown) => boolean;
 
 export class InvalidSchemaError extends Error {}
 

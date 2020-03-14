@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
 import {
   ArrayAst,
   Ast,
@@ -29,9 +30,7 @@ const printFunction = (ast: FunctionAst, options: PrintOptions): string =>
     : `'${ast.name}'`;
 
 const printLiteral = (ast: LiteralAst): string =>
-  typeof ast.value === 'string'
-    ? `'"${ast.value}"'`
-    : `${ast.value}`;
+  typeof ast.value === 'string' ? `'"${ast.value}"'` : `${ast.value}`;
 
 const isUndefined = (ast: Ast): boolean =>
   ast.type === 'value' && ast.value === undefined;
@@ -42,10 +41,11 @@ const FN_SUFFIX: { [key: string]: string } = {
   ref: '',
 };
 
-const getObjectKeySuffix = (ast: Ast): { suffix: string, valueAst: Ast } => {
-  if (ast.type === 'object'
-    && ast.properties.length === 1
-    && ast.properties[0].objectKey === '$keyof'
+const getObjectKeySuffix = (ast: Ast): { suffix: string; valueAst: Ast } => {
+  if (
+    ast.type === 'object' &&
+    ast.properties.length === 1 &&
+    ast.properties[0].objectKey === '$keyof'
   ) {
     return {
       suffix: ':keyof',
@@ -68,9 +68,9 @@ const getObjectKeySuffix = (ast: Ast): { suffix: string, valueAst: Ast } => {
   }
 
   if (
-    ast.type === 'union'
-    && ast.items.length === 2
-    && ast.items.some(isUndefined)
+    ast.type === 'union' &&
+    ast.items.length === 2 &&
+    ast.items.some(isUndefined)
   ) {
     const other = ast.items.find(i => !isUndefined(i));
     if (other) {
@@ -96,30 +96,29 @@ const printObjectProperty = (
 
   const k = suffix
     ? `'${key}${suffix}'`
-    : `${key}`.match(/[^\w_$]/) ? `'${key}'` : key;
+    : `${key}`.match(/[^\w_$]/)
+    ? `'${key}'`
+    : key;
 
   return `${k}: ${padd(printAny(valueAst, options))}`;
 };
 
 const printObject = (ast: ObjectAst, options: PrintOptions): string =>
-  `{${!ast.strict ? '\n  $strict: false,' : ''
-    }${
-    ast.extendsFrom
-      .map(e => `\n  ...${e},`)
-      .join('')
-    }${
-    ast.properties
-      .map(p => `\n  ${printObjectProperty(p, options)},`)
-    . join('')
-    }\n}`;
+  `{${!ast.strict ? '\n  $strict: false,' : ''}${ast.extendsFrom
+    .map(e => `\n  ...${e},`)
+    .join('')}${ast.properties
+    .map(p => `\n  ${printObjectProperty(p, options)},`)
+    .join('')}\n}`;
 
 const printRegExp = (ast: RegExpAst): string => ast.value.toString();
 
 const printUnion = (ast: UnionAst, options: PrintOptions): string => {
-  const useString = ast.items.every(i =>
-    i.type === 'function' && (options.quote || !REFS.includes(i.key.join('.')))
-    || i.type === 'value'
-    || i.type === 'literal',
+  const useString = ast.items.every(
+    i =>
+      (i.type === 'function' &&
+        (options.quote || !REFS.includes(i.key.join('.')))) ||
+      i.type === 'value' ||
+      i.type === 'literal',
   );
 
   const allowUndefined = ast.items.find(isUndefined);
@@ -139,31 +138,44 @@ const printUnion = (ast: UnionAst, options: PrintOptions): string => {
 };
 
 const printValue = <T>(ast: ValueAst<T>): string =>
-  typeof ast.value === 'string'
-    ? `'${ast.value}'`
-    : `${ast.value}`;
+  typeof ast.value === 'string' ? `'${ast.value}'` : `${ast.value}`;
 
 const printAny = (ast: Ast, options: PrintOptions): string => {
   switch (ast.type) {
-    case 'array': return printArray(ast, options);
-    case 'function': return printFunction(ast, options);
-    case 'literal': return printLiteral(ast);
-    case 'object': return printObject(ast, options);
-    case 'regexp': return printRegExp(ast);
-    case 'union': return printUnion(ast, options);
-    case 'value': return printValue(ast);
-    default: return '';
+    case 'array':
+      return printArray(ast, options);
+    case 'function':
+      return printFunction(ast, options);
+    case 'literal':
+      return printLiteral(ast);
+    case 'object':
+      return printObject(ast, options);
+    case 'regexp':
+      return printRegExp(ast);
+    case 'union':
+      return printUnion(ast, options);
+    case 'value':
+      return printValue(ast);
+    default:
+      return '';
   }
 };
 
-export const print = (items: Ast[], options: PrintOptions) => `${
-  items.map(i => `${
-    options.useExport ? 'export ' : ''
-  }const ${i.key} = ${printAny(i, options)};\n\n`).join('')
-  }${
+export const print = (items: Ast[], options: PrintOptions) =>
+  `${items
+    .map(
+      i =>
+        `${options.useExport ? 'export ' : ''}const ${i.key} = ${printAny(
+          i,
+          options,
+        )};\n\n`,
+    )
+    .join('')}${
     options.useExport
-     ? ''
-     : `module.exports = {${
-        items.map(i => i.key).sort().map(n => `\n  ${n},`).join('')
-        }\n};\n`
+      ? ''
+      : `module.exports = {${items
+          .map(i => i.key)
+          .sort()
+          .map(n => `\n  ${n},`)
+          .join('')}\n};\n`
   }`;

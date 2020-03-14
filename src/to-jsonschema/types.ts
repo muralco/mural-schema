@@ -1,4 +1,4 @@
-interface JsonSchemaAny {}
+type JsonSchemaAny = {};
 
 export interface JsonSchemaArray {
   type: 'array';
@@ -10,7 +10,7 @@ interface JsonSchemaBoolean {
 }
 
 export interface JsonSchemaEnum {
-  enum: (string|number|boolean)[];
+  enum: (string | number | boolean)[];
 }
 
 interface JsonSchemaNull {
@@ -49,5 +49,4 @@ export type JsonSchema =
   | JsonSchemaNumber
   | JsonSchemaObject
   | JsonSchemaString
-  | JsonSchemaUnion
-  ;
+  | JsonSchemaUnion;

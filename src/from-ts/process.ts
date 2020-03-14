@@ -18,14 +18,16 @@ const fromTs = (
   parseOptions: Options = { recursivePartial: DEFAULT_RECURSIVE_PARTIAL },
   printOptions: PrintOptions = {},
 ) => {
-  const items = flatten(fileContent.map((content, i) => {
-    const sourceFile = ts.createSourceFile(
-      `file-${i}`,
-      content,
-      ts.ScriptTarget.ES2015,
-    );
-    return parse(sourceFile, parseOptions);
-  }));
+  const items = flatten(
+    fileContent.map((content, i) => {
+      const sourceFile = ts.createSourceFile(
+        `file-${i}`,
+        content,
+        ts.ScriptTarget.ES2015,
+      );
+      return parse(sourceFile, parseOptions);
+    }),
+  );
 
   return print(items, printOptions).trim();
 };
