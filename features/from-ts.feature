@@ -30,6 +30,16 @@ Scenario: Boolean
     };
     """
 
+Scenario: Null
+  Given a TS file with interface Some { key: null; }
+  When generating the schema from that file with exports
+  Then the generated schema is
+    """
+    export const Some = {
+      key: null,
+    };
+    """
+
 Scenario: Optional
   Given a TS file with interface Some { key?: string; }
   When generating the schema from that file with exports
@@ -333,6 +343,14 @@ Scenario: Number union
   Then the generated schema is
     """
     export const A = '1|2';
+    """
+
+Scenario: String and null union
+  Given a TS file with type A = string | null;
+  When generating the schema from that file with exports
+  Then the generated schema is
+    """
+    export const A = 'string|null';
     """
 
 Scenario: Generic dictionary
