@@ -22,5 +22,5 @@ jobs:
       - bash scripts/publish.sh
       skip_cleanup: true
       email: it@mural.co
-      on:
-        branch: master
+      # Deploy on merge to master
+      if: type = push AND branch = master
