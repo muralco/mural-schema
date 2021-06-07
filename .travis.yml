@@ -1,13 +1,26 @@
 language: node_js
 node_js:
-  - "node"
-script:
-  - npm run dist
+  - 12
 
-deploy:
-  provider: script
-  script: bash scripts/publish.sh
-  skip_cleanup: true
-  email: it@mural.co
-  on:
-    branch: master
+jobs:
+  include:
+    - stage: test
+      script: npm run lint
+      name: "Lint"
+    - script:
+      - npm install typescript@3
+      - npm test
+      name: "TypeScript 3"
+    - script:
+      - npm install typescript@4
+      - npm test
+      name: "TypeScript 4"
+    - stage: deploy
+      provider: script
+      script:
+      - npm run dist
+      - bash scripts/publish.sh
+      skip_cleanup: true
+      email: it@mural.co
+      # Deploy on merge to master
+      if: type = push AND branch = master

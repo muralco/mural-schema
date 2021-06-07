@@ -151,7 +151,11 @@ function generateType(type: ts.Node, options: Options): Ast {
   if (ts.isArrayTypeNode(type)) return generateArray(type, options);
   if (ts.isUnionTypeNode(type)) return generateUnion(type, options);
   if (ts.isTypeReferenceNode(type)) return generateTypeRef(type, options);
-  if (ts.isLiteralTypeNode(type)) return generateLiteral(type);
+  if (ts.isLiteralTypeNode(type))
+    // TypeScript 4 adds NullLiteral to LiteralTypeNode
+    return type.literal.kind === ts.SyntaxKind.NullKeyword
+      ? generateValue('null', null)
+      : generateLiteral(type);
   if (ts.isIntersectionTypeNode(type)) {
     return generateIntersectionObject(type, options);
   }

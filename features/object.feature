@@ -1,5 +1,10 @@
 Feature: object
 
+Scenario: success null
+  Given a schema { "key": null }
+  When validating { "key": null }
+  Then the validation passes
+
 Scenario: success number
   Given a schema { "key": "number" }
   When validating { "key": 1 }
@@ -14,7 +19,8 @@ Scenario: success one of each
       "lu": "'a'|'b'",
       "n": "number",
       "o": { "child": "string" },
-      "s": "string"
+      "s": "string",
+      "u": null
     }
     """
   When validating
@@ -25,7 +31,8 @@ Scenario: success one of each
       "lu": "a",
       "n": 1,
       "o": { "child": "yeah" },
-      "s": "name"
+      "s": "name",
+      "u": null
     }
     """
   Then the validation passes
