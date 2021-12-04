@@ -139,6 +139,36 @@ const generateLiteral = (node: ts.LiteralTypeNode): LiteralAst => ({
     : false,
 });
 
+const generateUnknownType = (node: ts.Node): Ast => ({
+  fn: FN,
+  key: [ts.SyntaxKind[node.kind]],
+  name: `Unknown type: ${ts.SyntaxKind[node.kind]}`,
+  type: 'function',
+});
+
+const generateIndexedType = (node: ts.IndexedAccessTypeNode): Ast => {
+  const rawIndex = ts.isLiteralTypeNode(node.indexType)
+    ? generateLiteral(node.indexType).value
+    : `Unknown type literal: ${ts.SyntaxKind[node.indexType.kind]}`;
+
+  const index = `${rawIndex}`.match(/^[a-z0-9$_$]+$/i)
+    ? `.${rawIndex}`
+    : `['${rawIndex}']`;
+
+  if (ts.isTypeReferenceNode(node.objectType)) {
+    return createTypeRef(`${getName(node.objectType.typeName)}${index}`);
+  }
+
+  if (ts.isIndexedAccessTypeNode(node.objectType)) {
+    const objAst = generateIndexedType(node.objectType);
+    if (objAst.type === 'function' && !objAst.name.startsWith('Unknown type')) {
+      return createTypeRef(`${objAst.name}${index}`);
+    }
+  }
+
+  return generateUnknownType(node);
+};
+
 const generateValue = <T>(name: string, value: T): ValueAst<T> => ({
   key: [],
   name,
@@ -169,6 +199,9 @@ function generateType(type: ts.Node, options: Options): Ast {
   if (ts.isParenthesizedTypeNode(type)) {
     return generateType(type.type, options);
   }
+  if (ts.isIndexedAccessTypeNode(type)) {
+    return generateIndexedType(type);
+  }
 
   switch (type.kind) {
     case ts.SyntaxKind.StringKeyword:
@@ -186,12 +219,7 @@ function generateType(type: ts.Node, options: Options): Ast {
     case ts.SyntaxKind.UndefinedKeyword:
       return generateValue('undefined', undefined);
     default: {
-      return {
-        fn: FN,
-        key: [ts.SyntaxKind[type.kind]],
-        name: `Unkown type: ${ts.SyntaxKind[type.kind]}`,
-        type: 'function',
-      };
+      return generateUnknownType(type);
     }
   }
 }
