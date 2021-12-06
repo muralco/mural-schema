@@ -1,8 +1,7 @@
 import * as ts from 'typescript';
 import { print } from '../print';
 import { PrintOptions } from '../types';
-import { flatten } from '../util';
-import { parse } from './parse-to-ast';
+import { Import, parse } from './parse-to-ast';
 import { Options } from './types';
 
 export const DEFAULT_RECURSIVE_PARTIAL = [
@@ -13,23 +12,45 @@ export const DEFAULT_RECURSIVE_PARTIAL = [
   'RecursivePartial',
 ];
 
+const printImport = (
+  { from, parts }: Import,
+  mapping: NonNullable<Options['imports']>,
+): string => {
+  const aliasPath = mapping.get(from);
+  return aliasPath
+    ? `import { ${parts
+        .map(p => (p.alias !== p.name ? `${p.name} as ${p.alias}` : p.name))
+        .join(', ')} } from '${aliasPath}';\n`
+    : '';
+};
+
 const fromTs = (
   fileContent: string[],
   parseOptions: Options = { recursivePartial: DEFAULT_RECURSIVE_PARTIAL },
   printOptions: PrintOptions = {},
-) => {
-  const items = flatten(
-    fileContent.map((content, i) => {
+): string => {
+  const { ast, imports } = fileContent.reduce(
+    (acc, content, i) => {
       const sourceFile = ts.createSourceFile(
         `file-${i}`,
         content,
         ts.ScriptTarget.ES2015,
       );
-      return parse(sourceFile, parseOptions);
-    }),
+      const { ast, imports } = parse(sourceFile, parseOptions);
+      acc.ast.push(...ast);
+      acc.imports.push(...imports);
+      return acc;
+    },
+    { ast: [], imports: [] } as ReturnType<typeof parse>,
   );
 
-  return print(items, printOptions).trim();
+  const importMapping = parseOptions.imports;
+
+  return `${
+    importMapping
+      ? imports.map(i => printImport(i, importMapping)).join('')
+      : ''
+  }${print(ast, printOptions).trim()}`;
 };
 
 export default fromTs;

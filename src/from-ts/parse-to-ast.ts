@@ -15,8 +15,11 @@ import { makePartial } from '../parse';
 import { flatten } from '../util';
 import { ListOrPredicate, Options } from './types';
 
+const getText = (i: ts.Identifier): string =>
+  (i.escapedText as string) || i.text;
+
 const getName = (e: ts.EntityName | ts.PropertyName): string =>
-  ((e as ts.Identifier).escapedText as string) || (e as ts.Identifier).text;
+  getText(e as ts.Identifier);
 
 const ANY = '$any';
 
@@ -453,5 +456,76 @@ const generateTypes = (
   prefix = '',
 ): Ast[] => flatten(nodes.map(n => generateTopLevelType(n, options, prefix)));
 
-export const parse = (sourceFile: ts.SourceFile, options: Options) =>
-  generateTypes(sourceFile.statements, options);
+export interface Import {
+  from: string;
+  parts: { alias: string; name: string }[];
+}
+
+const generateImport = (node: ts.ImportDeclaration): Import | null =>
+  !node.importClause
+    ? null // import './some-file'
+    : {
+        from: (node.moduleSpecifier as ts.StringLiteral).text,
+        parts: node.importClause.namedBindings
+          ? (node.importClause.namedBindings as ts.NamedImports).elements.map(
+              e => ({
+                alias: getText(e.name),
+                name: getText(e.propertyName || e.name),
+              }),
+            )
+          : [],
+      };
+
+const isNotNull = <T>(x: T | null): x is T => x !== null;
+
+const BUILT_INS = ['string', 'number', 'boolean', 'any'];
+
+const getRefs = (ast: Ast): string[] => {
+  switch (ast.type) {
+    case 'array':
+      return getRefs(ast.item);
+    case 'function':
+      return ast.fn === FN && !BUILT_INS.includes(ast.name)
+        ? [ast.name.split(/[[.]/)[0]]
+        : [];
+    case 'object':
+      return [
+        ...ast.extendsFrom,
+        ...flatten(ast.properties.map(p => getRefs(p.ast))),
+      ];
+    case 'union':
+      return flatten(ast.items.map(getRefs));
+    default:
+      return [];
+  }
+};
+
+const filterImports = (ast: Ast[], imports: Import[]): Import[] => {
+  if (!imports.length) return [];
+
+  const refs = new Set(flatten(ast.map(getRefs)));
+
+  return imports
+    .map(i => ({
+      ...i,
+      parts: i.parts.filter(p => refs.has(p.alias)),
+    }))
+    .filter(i => i.parts.length);
+};
+
+export const parse = (
+  sourceFile: ts.SourceFile,
+  options: Options,
+): { ast: Ast[]; imports: Import[] } => {
+  const ast = generateTypes(sourceFile.statements, options);
+
+  const imports = sourceFile.statements
+    .filter(ts.isImportDeclaration)
+    .map(generateImport)
+    .filter(isNotNull);
+
+  return {
+    imports: filterImports(ast, imports),
+    ast,
+  };
+};
