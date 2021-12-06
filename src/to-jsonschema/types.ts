@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-types
 type JsonSchemaAny = {};
 
 export interface JsonSchemaArray {

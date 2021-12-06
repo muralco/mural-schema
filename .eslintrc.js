@@ -7,15 +7,11 @@ module.exports = {
   extends: [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    "prettier/@typescript-eslint",
+    "prettier",
     "plugin:prettier/recommended",
     "plugin:muralco/recommended"
   ],
   parser: "@typescript-eslint/parser",
-  parserOptions: {
-    ecmaVersion: 2018, // Allows for the parsing of modern ECMAScript features
-    sourceType: "module" // Allows for the use of imports,
-  },
   ignorePatterns: ["node_modules/"],
   rules: {
     "@typescript-eslint/explicit-function-return-type": 0,
@@ -28,17 +24,7 @@ module.exports = {
         allowChildren: false,
         from: "/types\\.ts$",
         message: "A 'types.ts' can only import other 'types.ts' files",
-        to: ['/types', '@tactivos/mural-shared/lib/images'],
-      },
-      {
-        from: "/parser",
-        to: [
-          '@tactivos/mural-shared/lib/',
-          '/fonts',
-          '/mural/types$',
-          '/processor/bbox',
-          '/utils',
-        ]
+        to: ['/types'],
       },
     ]]
   }
