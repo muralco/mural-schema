@@ -1,5 +1,6 @@
 import { fail } from 'assert';
 import pickledCucumber, { SetupFn } from 'pickled-cucumber';
+import { loadOptions } from './from-ts/options';
 import fromTs from './from-ts/process';
 import * as S from './index';
 import toJsonSchema, { astToJsonSchema } from './to-jsonschema';
@@ -40,6 +41,9 @@ const setup: SetupFn = ({ compare, getCtx, Given, setCtx, Then, When }) => {
   Given('a TS file with', content => appendCtx('$ts', content), {
     inline: true,
   });
+  Given('config options with', content => setCtx('$options', content), {
+    inline: true,
+  });
   When(
     'validating',
     obj => setCtx('$errors', getCtx<S.ValidationFn>('$schema')(parseJSON(obj))),
@@ -52,18 +56,27 @@ const setup: SetupFn = ({ compare, getCtx, Given, setCtx, Then, When }) => {
   );
   When(
     'generating the schema from (?:that|those) files?( with exports)?',
-    (withExports, options) =>
+    (withExports, options) => {
+      const { parseOptions, printOptions } = loadOptions([
+        '-o',
+        options || getCtx<string>('$options') || '{}',
+      ]);
+
       setCtx(
         '$schema-file',
         fromTs(
           getCtx<string[]>('$ts'),
           {
             recursivePartial: ['PartialPartial'],
-            ...JSON.parse(options || '{}'),
+            ...parseOptions,
           },
-          { useExport: !!withExports },
+          {
+            ...printOptions,
+            useExport: !!withExports || printOptions.useExport,
+          },
         ),
-      ),
+      );
+    },
     { optional: 'with options' },
   );
   When(

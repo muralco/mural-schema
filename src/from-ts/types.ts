@@ -4,6 +4,12 @@ export interface Options {
   // Do not generate these types
   ignore?: ListOrPredicate;
 
+  // If specified, when the source TS file imports types from another file and
+  // those types are included in the output, also include `import` statements
+  // for those types. If this is `undefined` we'll ignore all `import`
+  //statements
+  imports?: Map<string, string>;
+
   // If a TS type name matches one of these, generate a custom type reference
   // For example for:
   //

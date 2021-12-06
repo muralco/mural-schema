@@ -12,10 +12,8 @@
     "alwaysStrict": true,
     "declaration": true,
     "sourceMap": true,
+    "skipLibCheck": true,
     "baseUrl": "./src",
-    "lib": [
-      "es6", "dom", "es2015.promise", "es2016.array.include"
-    ],
   },
   "include": ["./src/**/*.ts"]
 }
