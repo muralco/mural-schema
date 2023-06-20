@@ -33,7 +33,7 @@ export interface JsonSchemaObject {
 
 export interface JsonSchemaString {
   type: 'string';
-  pattern?: RegExp;
+  pattern?: string;
 }
 
 interface JsonSchemaUnion {
