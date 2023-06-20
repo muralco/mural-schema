@@ -108,16 +108,19 @@ export const oneOf = (
 export const allOf = (validationFns: ValidationFn[]): ValidationFn => obj =>
   flatten(validationFns.map(fn => fn(obj)));
 
-export const getKeys = <T>(o: T): (keyof T)[] => Object.keys(o) as (keyof T)[];
+export const getKeys = <T extends object>(o: T) =>
+  Object.keys(o) as (keyof T)[];
 
 // Fails with one error for each key in `obj` that is not present in `keys`.
 export const noExtraKeys = (
   baseKey: Key,
   keys: string[],
 ): ValidationFn => obj =>
-  difference(getKeys(obj), keys).map(k =>
-    error([...baseKey, k], 'Unexpected key'),
-  );
+  obj && typeof obj === 'object'
+    ? difference(getKeys(obj), keys).map(k =>
+        error([...baseKey, k], 'Unexpected key'),
+      )
+    : [error([...baseKey], 'Internal error')];
 
 export const valueIs = (
   key: Key,
