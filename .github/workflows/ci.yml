@@ -1,0 +1,48 @@
+name: Build
+on:
+  push:
+    branches:
+      - master
+      - add/github-actions
+  pull_request: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test (TypeScript 3)
+        run: |
+          npm install typescript@3
+          npm run test
+
+      - name: Test (TypeScript 4)
+        run: |
+          npm install typescript@4
+          npm run test
+
+      - name: Build for distribution
+        run: npm run dist
+
+      - name: Publish
+        if: ${{github.ref == 'refs/heads/master'}}
+        working-directory: dist
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish
