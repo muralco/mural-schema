@@ -6,12 +6,24 @@ import toJsonSchema, { astToJsonSchema } from './to-jsonschema';
 
 astToJsonSchema; // pin down this reference
 
-const parseJSON = (s: string) =>
-  s === 'undefined'
-    ? undefined
-    : s.startsWith('/') && s.endsWith('/') && s.length > 1
-    ? new RegExp(s.substring(1, s.length - 1))
-    : JSON.parse(s);
+// Regular expression to match a regular expression literal
+const regExpRe = /^\/(.*)\/[dgimsuy]*$/;
+
+const parseJSON = (s: string) => {
+  // Literal 'undefined'
+  if (s === 'undefined') {
+    return undefined;
+  }
+
+  // Regular expression
+  const result = regExpRe.exec(s);
+  const pattern = result ? result[1] : null;
+  if (pattern) {
+    return new RegExp(pattern);
+  }
+
+  return JSON.parse(s);
+};
 
 const opts: S.ParseOptions = {
   customTypes: {

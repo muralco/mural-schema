@@ -74,7 +74,7 @@ const mapObject = (ast: ObjectAst, options: Options): JsonSchemaObject => ({
 });
 
 const mapRegExp = (ast: RegExpAst): JsonSchemaString => ({
-  pattern: ast.value,
+  pattern: ast.value.source,
   type: 'string',
 });
 
