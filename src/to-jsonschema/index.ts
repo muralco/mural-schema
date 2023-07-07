@@ -90,7 +90,7 @@ const mapValue = (ast: ValueAst<any>, options: Options): JsonSchema => {
   switch (ast.value) {
     case 'undefined':
       return {};
-    case 'null':
+    case null:
       return { type: 'null' };
     default:
       return mapCustom(ast, options);
