@@ -28,7 +28,108 @@ Scenario: Object
         "b": { "type": "boolean" },
         "c": { "type": "string" }
       },
+      "required": ["a"],
+      "additionalProperties": false
+    }
+    """
+
+Scenario: Object array
+  When mapping to JSON schema
+    """
+    [
+      {
+        "a": "number",
+        "b?": "boolean",
+        "c": "string?"
+      }
+    ]
+    """
+  Then the resulting schema is
+    """
+    {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "a": { "type": "number" },
+          "b": { "type": "boolean" },
+          "c": { "type": "string" }
+        },
+        "required": ["a"],
+        "additionalProperties": false
+      }
+    }
+    """
+
+Scenario: Object with `$strict: false`
+  When mapping to JSON schema
+    """
+    {
+      "a": "number",
+      "b?": "boolean",
+      "c": "string?",
+      "$strict": false
+    }
+    """
+  Then the resulting schema is
+    """
+    {
+      "type": "object",
+      "properties": {
+        "a": { "type": "number" },
+        "b": { "type": "boolean" },
+        "c": { "type": "string" }
+      },
       "required": ["a"]
+    }
+    """
+
+Scenario: Object with `$any` key
+  When mapping to JSON schema
+    """
+    {
+      "$any": "number"
+    }
+    """
+  Then the resulting schema is
+    """
+    {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": {
+        "type": "number"
+      }
+    }
+    """
+
+Scenario: Nested object with `$any` key
+  When mapping to JSON schema
+    """
+    {
+      "a": "string",
+      "b?": {
+        "$any": "number"
+      }
+    }
+    """
+  Then the resulting schema is
+    """
+    {
+      "type": "object",
+      "properties": {
+        "a": { "type": "string" },
+        "b": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": {
+            "type": "number"
+          }
+        }
+      },
+      "required": ["a"],
+      "additionalProperties": false
     }
     """
 

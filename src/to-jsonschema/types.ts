@@ -24,6 +24,7 @@ interface JsonSchemaNumber {
 }
 
 export interface JsonSchemaObject {
+  additionalProperties?: false | JsonSchema;
   properties: {
     [key: string]: JsonSchema;
   };
