@@ -59,19 +59,30 @@ const isUndefined = (ast: Ast): boolean =>
 const isOptional = (ast: Ast): ast is UnionAst =>
   ast.type === 'union' && ast.items.length === 2 && ast.items.some(isUndefined);
 
-const mapObject = (ast: ObjectAst, options: Options): JsonSchemaObject => ({
-  properties: ast.properties.reduce((acc, p) => {
-    const propAst = isOptional(p.ast)
-      ? { ...p.ast, items: p.ast.items.filter(i => !isUndefined(i)) }
-      : p.ast;
-    acc[p.objectKey] = mapAny(propAst, options);
-    return acc;
-  }, {} as JsonSchemaObject['properties']),
-  required: ast.properties
-    .filter(p => !isOptional(p.ast))
-    .map(p => p.objectKey),
-  type: 'object',
-});
+const mapObject = (ast: ObjectAst, options: Options): JsonSchemaObject => {
+  const anyProperty = ast.properties.find(p => p.anyKey);
+  return {
+    additionalProperties: ast.strict
+      ? false
+      : anyProperty
+      ? mapAny(anyProperty.ast, options)
+      : undefined,
+    properties: ast.properties.reduce((acc, p) => {
+      const propAst = isOptional(p.ast)
+        ? { ...p.ast, items: p.ast.items.filter(i => !isUndefined(i)) }
+        : p.ast;
+      if (!p.anyKey) {
+        acc[p.objectKey] = mapAny(propAst, options);
+      }
+      return acc;
+    }, {} as JsonSchemaObject['properties']),
+    required: ast.properties
+      .filter(p => !p.anyKey)
+      .filter(p => !isOptional(p.ast))
+      .map(p => p.objectKey),
+    type: 'object',
+  };
+};
 
 const mapRegExp = (ast: RegExpAst): JsonSchemaString => ({
   pattern: ast.value.source,
