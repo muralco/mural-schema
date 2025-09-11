@@ -8,7 +8,7 @@ Scenario: success email
 Scenario: error email
   Given a schema "email"
   When validating "not an email"
-  Then the validation error is "Expected email"
+  Then the validation error is "Expected email. Received string"
 
 Scenario: success Person
   Given a schema "Person"
@@ -24,4 +24,4 @@ Scenario: success Person?
 Scenario: error Person
   Given a schema "Person"
   When validating { "first": "Peter" }
-  Then the validation error is "Expected string" at ["last"]
+  Then the validation error is "Expected string. Received undefined" at ["last"]

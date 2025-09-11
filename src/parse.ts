@@ -53,7 +53,7 @@ const parseFunction = (
   fn: obj => {
     const error = schemaFunction(obj);
     if (typeof error === 'boolean') {
-      return error ? [] : [expected(key, name)];
+      return error ? [] : [expected(key, name, obj)];
     }
     return error;
   },

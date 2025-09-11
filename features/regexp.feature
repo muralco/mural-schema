@@ -9,7 +9,7 @@ Scenario: success
 
 Scenario: error invalid type
   When validating true
-  Then the validation error is "Expected string"
+  Then the validation error is "Expected string. Received boolean"
 
 Scenario: error invalid valud
   When validating "a"

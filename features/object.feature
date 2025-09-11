@@ -50,12 +50,12 @@ Scenario: error extra keys (strict mode)
 Scenario: error missing keys
   Given a schema { "key": "number" }
   When validating {}
-  Then the validation error is "Expected number" at ["key"]
+  Then the validation error is "Expected number. Received undefined" at ["key"]
 
 Scenario: error nested
   Given a schema { "key": { "n": "number" } }
   When validating { "key": { "n": true } }
-  Then the validation error is "Expected number" at ["key", "n"]
+  Then the validation error is "Expected number. Received boolean" at ["key", "n"]
 
 # === Optional =============================================================== #
 
@@ -72,7 +72,7 @@ Scenario: success optional key present
 Scenario: error optional key wrong type
   Given a schema { "key?": "number" }
   When validating { "key": "one" }
-  Then the validation error is "Expected number, undefined" at ["key"]
+  Then the validation error is "Expected number, undefined. Received string" at ["key"]
 
 # === Partial ================================================================ #
 
@@ -89,7 +89,7 @@ Scenario: success partial empty
 Scenario: error partial key wrong type
   Given a schema { "key/": { "a": "string", "b": "string" } }
   When validating { "key": { "a": 1 } }
-  Then the validation error is "Expected string, undefined" at ["key", "a"]
+  Then the validation error is "Expected string, undefined. Received number" at ["key", "a"]
 
 # === Recursive partial ====================================================== #
 
@@ -139,7 +139,7 @@ Scenario: error recursive partial key wrong type
     }
     """
   When validating { "key": { "a": { "b": 1 } } }
-  Then the validation error is "Expected string, undefined" at ["key", "a", "b"]
+  Then the validation error is "Expected string, undefined. Received number" at ["key", "a", "b"]
 
 # === Partial Array ========================================================== #
 
@@ -161,7 +161,7 @@ Scenario: success partial array empty object
 Scenario: error partial key wrong type
   Given a schema { "key/": [{ "a": "string" }] }
   When validating { "key": [{ "a": 1 }] }
-  Then the validation error is "Expected string, undefined" at ["key", 0, "a"]
+  Then the validation error is "Expected string, undefined. Received number" at ["key", 0, "a"]
 
 # === Partial Union ========================================================== #
 
@@ -188,7 +188,7 @@ Scenario: error partial union invalid key
 Scenario: error partial union wrong type
   Given a schema { "key/": [[{ "a": "string" },{ "b": "string"}]] }
   When validating { "key": { "a": 1 } }
-  Then the validation error is "Expected string, undefined" at ["key", "a"]
+  Then the validation error is "Expected string, undefined. Received number" at ["key", "a"]
 
 # === Optional partial ======================================================= #
 
@@ -210,7 +210,7 @@ Scenario: success partial optional empty
 Scenario: error partial optional key wrong type
   Given a schema { "key/?": { "a": "string", "b": "string" } }
   When validating { "key": { "a": 1 } }
-  Then the validation error is "Expected string, undefined" at ["key", "a"]
+  Then the validation error is "Expected string, undefined. Received number" at ["key", "a"]
 
 # === Optional recursive partial ============================================= #
 
@@ -276,13 +276,13 @@ Scenario: error optional recursive partial key wrong type
     }
     """
   When validating { "key": { "a": { "b": 1 } } }
-  Then the validation error is "Expected string, undefined" at ["key", "a", "b"]
+  Then the validation error is "Expected string, undefined. Received number" at ["key", "a", "b"]
 
 Scenario: error optional partial invalid modifier order
   Given a schema { "key?/": { "a": "string" } }
   # Note that the suffix above is wrong, it should be `/?`!
   When validating {}
-  Then the validation error is "Expected object" at ["key?"]
+  Then the validation error is "Expected object. Received undefined" at ["key?"]
 
 # === Keyof ================================================================== #
 
@@ -294,12 +294,12 @@ Scenario: success keyof key present
 Scenario: error keyof key wrong value
   Given a schema { "key:keyof": { "a": "string", "b": "string" } }
   When validating { "key": "c" }
-  Then the validation error is "Expected 'a', 'b'" at ["key"]
+  Then the validation error is "Expected 'a', 'b'. Received string" at ["key"]
 
 Scenario: error keyof key wrong type
   Given a schema { "key:keyof": { "a": "string", "b": "string" } }
   When validating { "key": 1 }
-  Then the validation error is "Expected 'a', 'b'" at ["key"]
+  Then the validation error is "Expected 'a', 'b'. Received number" at ["key"]
 
 # === $keyof ================================================================= #
 
@@ -311,12 +311,12 @@ Scenario: success $keyof key present
 Scenario: error $keyof key wrong value
   Given a schema { "$keyof": { "a": "string", "b": "string" } }
   When validating "c"
-  Then the validation error is "Expected 'a', 'b'"
+  Then the validation error is "Expected 'a', 'b'. Received string"
 
 Scenario: error keyof key wrong type
   Given a schema { "$keyof": { "a": "string", "b": "string" } }
   When validating 1
-  Then the validation error is "Expected 'a', 'b'"
+  Then the validation error is "Expected 'a', 'b'. Received number"
 
 Scenario: success $keyof array key present
   Given a schema [{ "$keyof": { "a": "string", "b": "string" } }]
@@ -331,12 +331,12 @@ Scenario: success $keyof array empty
 Scenario: error $keyof key wrong value
   Given a schema [{ "$keyof": { "a": "string", "b": "string" } }]
   When validating ["c"]
-  Then the validation error is "Expected 'a', 'b'" at [0]
+  Then the validation error is "Expected 'a', 'b'. Received string" at [0]
 
 Scenario: error keyof key wrong type
   Given a schema [{ "$keyof": { "a": "string", "b": "string" } }]
   When validating "a"
-  Then the validation error is "Expected array"
+  Then the validation error is "Expected array. Received string"
 
 # === $any =================================================================== #
 
@@ -353,7 +353,7 @@ Scenario: success $any (empty)
 Scenario: error $any
   Given a schema { "$any": "string" }
   When validating { "a": 1 }
-  Then the validation error is "Expected string" at ["a"]
+  Then the validation error is "Expected string. Received number" at ["a"]
 
 Scenario: success nested $any
   Given a schema { "$any": { "a": "string" } }
@@ -378,7 +378,7 @@ Scenario: success recursive partial nested $any
 Scenario: error nested $any
   Given a schema { "$any": { "a": "string" } }
   When validating { "x": { "a": 1 } }
-  Then the validation error is "Expected string" at ["x", "a"]
+  Then the validation error is "Expected string. Received number" at ["x", "a"]
 
 Scenario: error partial nested $any
   Given a schema { "$any/": { "a": "string", "b": "string" } }

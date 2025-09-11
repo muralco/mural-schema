@@ -22,6 +22,7 @@ export type Key = (string | number)[];
 
 export interface ValidationError {
   message: string;
+  received?: string;
   key: Key;
   expected?: string;
 }
