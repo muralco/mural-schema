@@ -30,11 +30,20 @@ export const error = (key: Key, message: string): ValidationError => ({
   message,
 });
 
-export const expected = (key: Key, what: string): ValidationError => ({
-  expected: what,
-  key,
-  message: `Expected ${what}`,
-});
+export const expected = (
+  key: Key,
+  what: string,
+  received: unknown,
+): ValidationError => {
+  // To ensure we do not log the less specific type of 'object' when an 'array' is received
+  const receivedType = Array.isArray(received) ? 'array' : typeof received;
+  return {
+    expected: what,
+    received: receivedType,
+    key,
+    message: `Expected ${what}. Received ${receivedType}`,
+  };
+};
 
 const leastErrors = ([head, ...tail]: ValidationError[][]): ValidationError[] =>
   tail.reduce((a, b) => (a.length <= b.length ? a : b), head);
@@ -102,7 +111,7 @@ export const oneOf = (
   const invalid = flatten(errors)
     .map(e => e.expected)
     .filter(e => !!e);
-  return [expected(key, invalid.join(', '))];
+  return [expected(key, invalid.join(', '), obj)];
 };
 
 export const allOf = (validationFns: ValidationFn[]): ValidationFn => obj =>
@@ -126,4 +135,5 @@ export const valueIs = (
   key: Key,
   expectedValue: unknown,
   name: string,
-): ValidationFn => obj => (obj === expectedValue ? [] : [expected(key, name)]);
+): ValidationFn => obj =>
+  obj === expectedValue ? [] : [expected(key, name, obj)];

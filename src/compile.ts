@@ -29,7 +29,7 @@ import {
 } from './util';
 
 const compileRegExp = (ast: RegExpAst): ValidationFn => obj => {
-  if (typeof obj !== 'string') return [expected(ast.key, 'string')];
+  if (typeof obj !== 'string') return [expected(ast.key, 'string', obj)];
   return obj.match(ast.value)
     ? []
     : [error(ast.key, `Value does not match: ${ast.value}`)];
@@ -87,7 +87,8 @@ function compileObject(ast: ObjectAst): ValidationFn {
 
   const fn = allOf(allFnsWithAny);
 
-  return obj => (isPlainObject(obj) ? fn(obj) : [expected(ast.key, 'object')]);
+  return obj =>
+    isPlainObject(obj) ? fn(obj) : [expected(ast.key, 'object', obj)];
 }
 
 const addIndex = (key: Key, index: number) => (
@@ -101,7 +102,7 @@ function compileArray(ast: ArrayAst): ValidationFn {
   const fn = compile(ast.item);
 
   return obj => {
-    if (!Array.isArray(obj)) return [expected(ast.key, 'array')];
+    if (!Array.isArray(obj)) return [expected(ast.key, 'array', obj)];
     const errors = obj.map((v, i) => fn(v).map(addIndex(ast.key, i)));
     return flatten(errors);
   };
@@ -111,7 +112,7 @@ const quoteLiteral = (value: LiteralAst['value']): string =>
   typeof value === 'string' ? `'${value}'` : `${value}`;
 
 const compileLiteral = (ast: LiteralAst): ValidationFn => obj =>
-  obj === ast.value ? [] : [expected(ast.key, quoteLiteral(ast.value))];
+  obj === ast.value ? [] : [expected(ast.key, quoteLiteral(ast.value), obj)];
 
 // === Global =============================================================== //
 export function compile(ast: Ast): ValidationFn {

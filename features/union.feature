@@ -28,12 +28,12 @@ Scenario: success optional array
 Scenario: error no matching type
   Given a schema [[{"n": "number"}, "number"]]
   When validating true
-  Then the validation error is "Expected object, number"
+  Then the validation error is "Expected object, number. Received boolean"
 
 Scenario: error matching type with errors
   Given a schema [[{"n": "number"}, "number"]]
   When validating { "n": true }
-  Then the validation error is "Expected number" at ["n"]
+  Then the validation error is "Expected number. Received boolean" at ["n"]
 
 Scenario: success string
   Given a schema "number|string"
@@ -48,7 +48,7 @@ Scenario: success string
 Scenario: error string no matching type
   Given a schema "number|string"
   When validating true
-  Then the validation error is "Expected number, string"
+  Then the validation error is "Expected number, string. Received boolean"
 
 Scenario: success string and null union against string
   Given a schema "string|null"
@@ -63,9 +63,9 @@ Scenario: success string and null union against null
 Scenario: error string and null union
   Given a schema "string|null"
   When validating 1
-  Then the validation error is "Expected string, null"
+  Then the validation error is "Expected string, null. Received number"
 
 Scenario: return errors from best match
   Given a schema [[{"a": "number", "b": "number"}, {"a": "string", "c": "number"}]]
   When validating { "a": "hi" }
-  Then the validation error is "Expected number" at ["c"]
+  Then the validation error is "Expected number. Received undefined" at ["c"]

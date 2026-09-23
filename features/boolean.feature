@@ -13,16 +13,16 @@ Scenario: success false
 
 Scenario: error number
   When validating 1
-  Then the validation error is "Expected boolean"
+  Then the validation error is "Expected boolean. Received number"
 
 Scenario: error string
   When validating "yeah"
-  Then the validation error is "Expected boolean"
+  Then the validation error is "Expected boolean. Received string"
 
 Scenario: error object
   When validating { "a": 1 }
-  Then the validation error is "Expected boolean"
+  Then the validation error is "Expected boolean. Received object"
 
 Scenario: error array
   When validating []
-  Then the validation error is "Expected boolean"
+  Then the validation error is "Expected boolean. Received array"
